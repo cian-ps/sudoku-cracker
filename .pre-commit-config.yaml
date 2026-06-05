@@ -3,7 +3,6 @@ repos:
     rev: v0.15.16
     hooks:
       - id: ruff-check
-        exclude: ^tests/
       - id: ruff-format
 
   - repo: local

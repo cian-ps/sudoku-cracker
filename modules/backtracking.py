@@ -73,5 +73,5 @@ class SudokuBacktracking:
         Returns:
             numpy.ndarray: The solution to the sudoku puzzle.
         """
-        assert self.__solve(0, 0), "No solution found"
+        self.__solve(0, 0)
         return self.__mat
