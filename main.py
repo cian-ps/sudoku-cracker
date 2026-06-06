@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import os
 import numpy as np
 import logging
+
 from kivy.app import App
 from kivy.metrics import dp
 from kivy.uix.anchorlayout import AnchorLayout
@@ -10,10 +12,16 @@ from kivy.uix.button import Button
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.label import Label
 from kivy.uix.textinput import TextInput
+from kivy.config import Config
 
 from modules.backtracking import SudokuBacktracking
 
+os.environ.setdefault("KIVY_NO_ARGS", "1")
 logging.basicConfig(level=logging.DEBUG)
+
+Config.set("graphics", "headless", "0")
+Config.set("kivy", "log_level", "info")
+Config.write()
 
 ERROR_TEXT = "Invalid or unsolvable puzzle"
 
