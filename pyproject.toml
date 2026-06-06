@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = "==3.12.3"
 dependencies = [
     "jupyter>=1.1.1",
+    "kivy>=2.3.1",
     "matplotlib>=3.10.9",
     "mypy>=2.1.0",
     "opencv-python>=4.13.0.92",
@@ -15,3 +16,6 @@ dependencies = [
     "pytest>=9.0.3",
     "ruff>=0.15.16",
 ]
+
+[tool.mypy]
+ignore_missing_imports = true
