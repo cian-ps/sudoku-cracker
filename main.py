@@ -20,6 +20,7 @@ os.environ.setdefault("KIVY_NO_ARGS", "1")
 logging.basicConfig(level=logging.DEBUG)
 
 Config.set("graphics", "headless", "0")
+Config.set("input", "mouse", "mouse,disable_multitouch")
 Config.set("kivy", "log_level", "info")
 Config.write()
 
@@ -40,11 +41,19 @@ class Home(BoxLayout):
             return substring
         return ""
 
+    def _fit_cell_font(self, cell: TextInput, *_args) -> None:
+        side = min(cell.width, cell.height)
+        if side <= 0:
+            return
+        pad = max(1, side * 0.08)
+        cell.padding = [pad, pad, pad, pad]
+        inner = side - 2 * pad
+        cell.font_size = max(8, inner * 0.75)
+
     def _create_cell(self) -> TextInput:
         cell = TextInput(
             multiline=False,
             halign="center",
-            font_size="20sp",
             foreground_color=(0, 0, 0, 1),
             background_color=(1, 1, 1, 1),
             background_normal="",
@@ -52,7 +61,11 @@ class Home(BoxLayout):
             cursor_color=(0, 0, 0, 1),
             input_filter=self._digit_filter,
         )
-        cell.bind(focus=self._on_cell_focus, text=self._on_cell_text)
+        cell.bind(
+            focus=self._on_cell_focus,
+            text=self._on_cell_text,
+            size=self._fit_cell_font,
+        )
         return cell
 
     def _on_cell_focus(self, cell: TextInput, focused: bool) -> None:

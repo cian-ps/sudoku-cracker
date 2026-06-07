@@ -43,6 +43,20 @@ def test_home_cells_are_text_inputs(home):
     assert all(isinstance(cell, TextInput) for cell in home.cells)
 
 
+def test_cell_font_scales_with_size(home):
+    cell = home.cells[0]
+    cell.size = (30, 30)
+    home._fit_cell_font(cell)
+    small_font = cell.font_size
+    assert small_font > 0
+    assert small_font < 30
+    assert cell.padding[0] < 6
+
+    cell.size = (100, 100)
+    home._fit_cell_font(cell)
+    assert cell.font_size > small_font
+
+
 def test_on_cell_text_keeps_single_digit(home):
     cell = home.cells[0]
     cell.text = "5"
