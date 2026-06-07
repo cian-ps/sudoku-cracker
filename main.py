@@ -11,6 +11,7 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.label import Label
+from kivy.uix.image import Image
 from kivy.uix.textinput import TextInput
 from kivy.config import Config
 
@@ -97,15 +98,14 @@ class Home(BoxLayout):
         self.board.size = (side, side)
 
     def _build_ui(self) -> None:
-        title = Label(
-            text="Sudoku Cracker",
-            font_size="40sp",
-            size_hint_y=None,
-            height=dp(50),
+        title = Image(
+            source="assets/sudoku-cracker-banner.png",
+            size_hint_y=0.3,
+            height=dp(100),
         )
         self.status = Label(
             text="",
-            font_size="16sp",
+            font_size="20sp",
             size_hint_y=None,
             height=dp(24),
             color=(0.8, 0.2, 0.2, 1),
@@ -124,7 +124,9 @@ class Home(BoxLayout):
             spacing=dp(10),
         )
         clear_btn = Button(text="Clear", font_size="20sp")
-        solve_btn = Button(text="Solve", font_size="20sp")
+        solve_btn = Button(
+            text="Solve", font_size="20sp", background_color=(0.2, 0.8, 1, 1)
+        )
         clear_btn.bind(on_press=self._on_clear)
         solve_btn.bind(on_press=self._on_solve)
         button_row.add_widget(clear_btn)
