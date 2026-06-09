@@ -1,20 +1,31 @@
 [project]
-name = "sudoku-solver"
+name = "sudoku-cracker"
 version = "0.1.0"
-description = "Add your description here"
+description = "Solve any Sudoku puzzle in seconds."
 readme = "README.md"
 requires-python = "==3.12.3"
 dependencies = [
-    "jupyter>=1.1.1",
     "kivy>=2.3.1",
-    "matplotlib>=3.10.9",
+    "numpy==2.4.6",
+    "pip>=26.1.2",
+]
+
+[project.optional-dependencies]
+dev = [
     "mypy>=2.1.0",
-    "opencv-python>=4.13.0.92",
-    "paddleocr==3.3.3",
-    "paddlepaddle==3.2.0",
     "pre-commit>=4.6.0",
     "pytest>=9.0.3",
     "ruff>=0.15.16",
+    "buildozer>=1.6.0",
+    "cython==0.29.34",
+    "setuptools>=82.0.1",
+]
+ocr = [
+    "paddleocr==3.3.3",
+    "paddlepaddle==3.2.0",
+    "jupyter>=1.1.1",
+    "matplotlib>=3.10.9",
+    "opencv-python>=4.13.0.92",
 ]
 
 [tool.mypy]
