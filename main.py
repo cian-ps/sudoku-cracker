@@ -5,6 +5,7 @@ import numpy as np
 import logging
 
 from kivy.app import App
+from kivy.core.window import Window
 from kivy.metrics import dp
 from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.boxlayout import BoxLayout
@@ -25,7 +26,9 @@ Config.set("input", "mouse", "mouse,disable_multitouch")
 Config.set("kivy", "log_level", "info")
 Config.write()
 
-ERROR_TEXT = "Invalid or unsolvable puzzle"
+INVALID_PUZZLE_TEXT = "Invalid puzzle"
+UNSOLVABLE_PUZZLE_TEXT = "Unsolvable puzzle"
+SOFTINPUT_MODE = "below_target"
 
 
 class Home(BoxLayout):
@@ -61,6 +64,7 @@ class Home(BoxLayout):
             background_active="",
             cursor_color=(0, 0, 0, 1),
             input_filter=self._digit_filter,
+            input_type="number",
         )
         cell.bind(
             focus=self._on_cell_focus,
@@ -137,11 +141,40 @@ class Home(BoxLayout):
         self.add_widget(grid_area)
         self.add_widget(button_row)
 
+    @staticmethod
+    def _cell_index(row: int, col: int) -> int:
+        block_row, block_col = row // 3, col // 3
+        inner_row, inner_col = row % 3, col % 3
+        block_index = block_row * 3 + block_col
+        within_block = inner_row * 3 + inner_col
+        return block_index * 9 + within_block
+
+    @staticmethod
+    def _is_puzzle_valid(board: np.ndarray) -> bool:
+        for row in range(9):
+            for col in range(9):
+                num = board[row, col]
+                if num == 0:
+                    continue
+                for c in range(9):
+                    if c != col and board[row, c] == num:
+                        return False
+                for r in range(9):
+                    if r != row and board[r, col] == num:
+                        return False
+                block_row = row // 3 * 3
+                block_col = col // 3 * 3
+                for r in range(block_row, block_row + 3):
+                    for c in range(block_col, block_col + 3):
+                        if (r, c) != (row, col) and board[r, c] == num:
+                            return False
+        return True
+
     def _board_to_ndarray(self) -> np.ndarray:
         board = np.zeros((9, 9), dtype=np.int64)
         for row in range(9):
             for col in range(9):
-                text = self.cells[row * 9 + col].text.strip()
+                text = self.cells[self._cell_index(row, col)].text.strip()
                 board[row, col] = int(text) if text else 0
         return board
 
@@ -149,7 +182,7 @@ class Home(BoxLayout):
         for row in range(9):
             for col in range(9):
                 val = solution[row, col]
-                self.cells[row * 9 + col].text = str(val) if val else ""
+                self.cells[self._cell_index(row, col)].text = str(val) if val else ""
 
     def _on_clear(self, *_args) -> None:
         self.status.text = ""
@@ -159,17 +192,25 @@ class Home(BoxLayout):
     def _on_solve(self, *_args) -> None:
         self.status.text = ""
         board = self._board_to_ndarray()
+        if not self._is_puzzle_valid(board):
+            self.status.text = INVALID_PUZZLE_TEXT
+            logging.warning(
+                "Puzzle rejected: duplicate value in row, column, or 3x3 block"
+            )
+            return
         try:
             solution = SudokuBacktracking(board).get_solution()
+            logging.debug(solution)
         except RecursionError as e:
-            self.status.text = ERROR_TEXT
-            logging.debug(e)
+            self.status.text = UNSOLVABLE_PUZZLE_TEXT
+            logging.error("%s", e)
             return
         self._apply_solution(solution)
 
 
 class MainApp(App):
     def build(self) -> Home:
+        Window.softinput_mode = SOFTINPUT_MODE
         return Home()
 
 

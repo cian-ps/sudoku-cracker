@@ -1,6 +1,6 @@
 [project]
 name = "sudoku-cracker"
-version = "0.1.0"
+version = "1.0.0-beta.1"
 description = "Solve any Sudoku puzzle in seconds."
 readme = "README.md"
 requires-python = "==3.12.3"

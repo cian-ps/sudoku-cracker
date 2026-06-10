@@ -2250,7 +2250,7 @@ wheels = [
 ]
 
 [[package]]
-name = "sudoku-solver"
+name = "sudoku-cracker"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
