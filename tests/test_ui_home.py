@@ -20,9 +20,49 @@ EMPTY_BOARD_SOLUTION = np.array(
     dtype=np.int64,
 )
 
+EXAMPLE = np.array(
+    [
+        [4, 0, 0, 6, 0, 0, 0, 0, 2],
+        [1, 0, 2, 0, 8, 5, 0, 0, 0],
+        [0, 0, 5, 9, 1, 0, 0, 3, 8],
+        [0, 7, 8, 0, 0, 9, 2, 0, 0],
+        [0, 4, 0, 0, 3, 0, 0, 9, 0],
+        [0, 0, 3, 5, 0, 0, 1, 7, 0],
+        [8, 5, 0, 0, 9, 6, 7, 0, 0],
+        [0, 0, 0, 8, 2, 0, 6, 0, 9],
+        [2, 0, 0, 0, 0, 1, 0, 0, 4],
+    ],
+    dtype=np.int64,
+)
+
+EXAMPLE_SOLUTION = np.array(
+    [
+        [4, 8, 9, 6, 7, 3, 5, 1, 2],
+        [1, 3, 2, 4, 8, 5, 9, 6, 7],
+        [7, 6, 5, 9, 1, 2, 4, 3, 8],
+        [5, 7, 8, 1, 6, 9, 2, 4, 3],
+        [6, 4, 1, 2, 3, 7, 8, 9, 5],
+        [9, 2, 3, 5, 4, 8, 1, 7, 6],
+        [8, 5, 4, 3, 9, 6, 7, 2, 1],
+        [3, 1, 7, 8, 2, 4, 6, 5, 9],
+        [2, 9, 6, 7, 5, 1, 3, 8, 4],
+    ],
+    dtype=np.int64,
+)
+
 
 def _set_cell(home, row, col, value):
-    home.cells[row * 9 + col].text = str(value)
+    home.cells[Home._cell_index(row, col)].text = str(value)
+
+
+def _visual_cell(home, row, col):
+    """Return the TextInput widget at the on-screen (row, col) position."""
+    block_row, block_col = row // 3, col // 3
+    inner_row, inner_col = row % 3, col % 3
+    blocks = list(reversed(home.board.children))
+    block = blocks[block_row * 3 + block_col]
+    cells_in_block = list(reversed(block.children))
+    return cells_in_block[inner_row * 3 + inner_col]
 
 
 def test_digit_filter_accepts_one_through_nine():
@@ -101,7 +141,9 @@ def test_apply_solution_writes_cells(home):
 
     for row in range(9):
         for col in range(9):
-            assert home.cells[row * 9 + col].text == str(EMPTY_BOARD_SOLUTION[row, col])
+            assert _visual_cell(home, row, col).text == str(
+                EMPTY_BOARD_SOLUTION[row, col]
+            )
 
 
 def test_on_clear_empties_all_cells(home):
@@ -131,7 +173,37 @@ def test_on_solve_empty_board(home):
 
     for row in range(9):
         for col in range(9):
-            assert home.cells[row * 9 + col].text == str(EMPTY_BOARD_SOLUTION[row, col])
+            assert _visual_cell(home, row, col).text == str(
+                EMPTY_BOARD_SOLUTION[row, col]
+            )
+
+
+def test_on_solve_example(home):
+    for row in range(9):
+        for col in range(9):
+            val = EXAMPLE[row, col]
+            if val:
+                _set_cell(home, row, col, val)
+
+    home._on_solve()
+
+    for row in range(9):
+        for col in range(9):
+            assert _visual_cell(home, row, col).text == str(EXAMPLE_SOLUTION[row, col])
+
+
+def test_on_solve_example_via_visual_cells(home):
+    for row in range(9):
+        for col in range(9):
+            val = EXAMPLE[row, col]
+            if val:
+                _visual_cell(home, row, col).text = str(val)
+
+    home._on_solve()
+
+    for row in range(9):
+        for col in range(9):
+            assert _visual_cell(home, row, col).text == str(EXAMPLE_SOLUTION[row, col])
 
 
 def test_on_solve_invalid_puzzle_sets_status(home):
@@ -141,8 +213,8 @@ def test_on_solve_invalid_puzzle_sets_status(home):
     home._on_solve()
 
     assert home.status.text == ERROR_TEXT
-    assert home.cells[0].text == "1"
-    assert home.cells[1].text == "1"
+    assert _visual_cell(home, 0, 0).text == "1"
+    assert _visual_cell(home, 0, 1).text == "1"
 
 
 def test_keep_board_square_uses_smaller_dimension(home):

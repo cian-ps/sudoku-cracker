@@ -137,11 +137,19 @@ class Home(BoxLayout):
         self.add_widget(grid_area)
         self.add_widget(button_row)
 
+    @staticmethod
+    def _cell_index(row: int, col: int) -> int:
+        block_row, block_col = row // 3, col // 3
+        inner_row, inner_col = row % 3, col % 3
+        block_index = block_row * 3 + block_col
+        within_block = inner_row * 3 + inner_col
+        return block_index * 9 + within_block
+
     def _board_to_ndarray(self) -> np.ndarray:
         board = np.zeros((9, 9), dtype=np.int64)
         for row in range(9):
             for col in range(9):
-                text = self.cells[row * 9 + col].text.strip()
+                text = self.cells[self._cell_index(row, col)].text.strip()
                 board[row, col] = int(text) if text else 0
         return board
 
@@ -149,7 +157,7 @@ class Home(BoxLayout):
         for row in range(9):
             for col in range(9):
                 val = solution[row, col]
-                self.cells[row * 9 + col].text = str(val) if val else ""
+                self.cells[self._cell_index(row, col)].text = str(val) if val else ""
 
     def _on_clear(self, *_args) -> None:
         self.status.text = ""
@@ -161,9 +169,9 @@ class Home(BoxLayout):
         board = self._board_to_ndarray()
         try:
             solution = SudokuBacktracking(board).get_solution()
-        except RecursionError as e:
+            logging.debug(solution)
+        except RecursionError:
             self.status.text = ERROR_TEXT
-            logging.debug(e)
             return
         self._apply_solution(solution)
 
