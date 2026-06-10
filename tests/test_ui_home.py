@@ -3,56 +3,8 @@ from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.textinput import TextInput
 
 from main import Home
-from main import ERROR_TEXT
-
-EMPTY_BOARD_SOLUTION = np.array(
-    [
-        [1, 2, 3, 4, 5, 6, 7, 8, 9],
-        [4, 5, 6, 7, 8, 9, 1, 2, 3],
-        [7, 8, 9, 1, 2, 3, 4, 5, 6],
-        [2, 1, 4, 3, 6, 5, 8, 9, 7],
-        [3, 6, 5, 8, 9, 7, 2, 1, 4],
-        [8, 9, 7, 2, 1, 4, 3, 6, 5],
-        [5, 3, 1, 6, 4, 2, 9, 7, 8],
-        [6, 4, 2, 9, 7, 8, 5, 3, 1],
-        [9, 7, 8, 5, 3, 1, 6, 4, 2],
-    ],
-    dtype=np.int64,
-)
-
-EXAMPLE = np.array(
-    [
-        [4, 0, 0, 6, 0, 0, 0, 0, 2],
-        [1, 0, 2, 0, 8, 5, 0, 0, 0],
-        [0, 0, 5, 9, 1, 0, 0, 3, 8],
-        [0, 7, 8, 0, 0, 9, 2, 0, 0],
-        [0, 4, 0, 0, 3, 0, 0, 9, 0],
-        [0, 0, 3, 5, 0, 0, 1, 7, 0],
-        [8, 5, 0, 0, 9, 6, 7, 0, 0],
-        [0, 0, 0, 8, 2, 0, 6, 0, 9],
-        [2, 0, 0, 0, 0, 1, 0, 0, 4],
-    ],
-    dtype=np.int64,
-)
-
-EXAMPLE_SOLUTION = np.array(
-    [
-        [4, 8, 9, 6, 7, 3, 5, 1, 2],
-        [1, 3, 2, 4, 8, 5, 9, 6, 7],
-        [7, 6, 5, 9, 1, 2, 4, 3, 8],
-        [5, 7, 8, 1, 6, 9, 2, 4, 3],
-        [6, 4, 1, 2, 3, 7, 8, 9, 5],
-        [9, 2, 3, 5, 4, 8, 1, 7, 6],
-        [8, 5, 4, 3, 9, 6, 7, 2, 1],
-        [3, 1, 7, 8, 2, 4, 6, 5, 9],
-        [2, 9, 6, 7, 5, 1, 3, 8, 4],
-    ],
-    dtype=np.int64,
-)
-
-
-def _set_cell(home, row, col, value):
-    home.cells[Home._cell_index(row, col)].text = str(value)
+from main import INVALID_PUZZLE_TEXT
+from main import UNSOLVABLE_PUZZLE_TEXT
 
 
 def _visual_cell(home, row, col):
@@ -63,6 +15,14 @@ def _visual_cell(home, row, col):
     block = blocks[block_row * 3 + block_col]
     cells_in_block = list(reversed(block.children))
     return cells_in_block[inner_row * 3 + inner_col]
+
+
+def _fill_visual_board(home, board):
+    for row in range(9):
+        for col in range(9):
+            val = board[row, col]
+            if val:
+                _visual_cell(home, row, col).text = str(val)
 
 
 def test_digit_filter_accepts_one_through_nine():
@@ -118,6 +78,16 @@ def test_on_cell_text_clears_invalid_multi_char(home):
     assert cell.text == ""
 
 
+def test_is_puzzle_valid_accepts_example(example):
+    assert Home._is_puzzle_valid(example)
+
+
+def test_is_puzzle_valid_rejects_duplicate_in_row(example):
+    puzzle = example.copy()
+    puzzle[0, 1] = 4
+    assert not Home._is_puzzle_valid(puzzle)
+
+
 def test_board_to_ndarray_empty(home):
     board = home._board_to_ndarray()
     assert board.shape == (9, 9)
@@ -126,9 +96,9 @@ def test_board_to_ndarray_empty(home):
 
 
 def test_board_to_ndarray_reads_row_major(home):
-    _set_cell(home, 0, 0, 5)
-    _set_cell(home, 1, 2, 9)
-    _set_cell(home, 8, 8, 1)
+    _visual_cell(home, 0, 0).text = "5"
+    _visual_cell(home, 1, 2).text = "9"
+    _visual_cell(home, 8, 8).text = "1"
 
     board = home._board_to_ndarray()
     assert board[0, 0] == 5
@@ -136,20 +106,10 @@ def test_board_to_ndarray_reads_row_major(home):
     assert board[8, 8] == 1
 
 
-def test_apply_solution_writes_cells(home):
-    home._apply_solution(EMPTY_BOARD_SOLUTION)
-
-    for row in range(9):
-        for col in range(9):
-            assert _visual_cell(home, row, col).text == str(
-                EMPTY_BOARD_SOLUTION[row, col]
-            )
-
-
 def test_on_clear_empties_all_cells(home):
-    _set_cell(home, 0, 0, 1)
-    _set_cell(home, 4, 4, 5)
-    _set_cell(home, 8, 8, 9)
+    _visual_cell(home, 0, 0).text = "1"
+    _visual_cell(home, 4, 4).text = "5"
+    _visual_cell(home, 8, 8).text = "9"
 
     home._on_clear()
 
@@ -157,64 +117,48 @@ def test_on_clear_empties_all_cells(home):
 
 
 def test_on_clear_resets_status(home):
-    home.status.text = ERROR_TEXT
+    home.status.text = INVALID_PUZZLE_TEXT
     home._on_clear()
     assert home.status.text == ""
 
 
-def test_on_solve_resets_status(home):
-    home.status.text = ERROR_TEXT
-    home._on_solve()
-    assert home.status.text == ""
-
-
-def test_on_solve_empty_board(home):
+def test_on_solve_example(home, example, example_solution):
+    _fill_visual_board(home, example)
     home._on_solve()
 
     for row in range(9):
         for col in range(9):
-            assert _visual_cell(home, row, col).text == str(
-                EMPTY_BOARD_SOLUTION[row, col]
-            )
+            assert _visual_cell(home, row, col).text == str(example_solution[row, col])
 
 
-def test_on_solve_example(home):
-    for row in range(9):
-        for col in range(9):
-            val = EXAMPLE[row, col]
-            if val:
-                _set_cell(home, row, col, val)
-
+def test_on_solve_invalid_example_sets_status(home, example):
+    puzzle = example.copy()
+    puzzle[0, 1] = 4
+    _fill_visual_board(home, puzzle)
     home._on_solve()
 
-    for row in range(9):
-        for col in range(9):
-            assert _visual_cell(home, row, col).text == str(EXAMPLE_SOLUTION[row, col])
+    assert home.status.text == INVALID_PUZZLE_TEXT
+    assert _visual_cell(home, 0, 0).text == "4"
+    assert _visual_cell(home, 0, 1).text == "4"
+    assert _visual_cell(home, 0, 3).text == "6"
 
 
-def test_on_solve_example_via_visual_cells(home):
-    for row in range(9):
-        for col in range(9):
-            val = EXAMPLE[row, col]
-            if val:
-                _visual_cell(home, row, col).text = str(val)
+def test_on_solve_unsolvable_sets_status(home, example, monkeypatch):
+    _fill_visual_board(home, example)
 
+    class FailingSolver:
+        def __init__(self, _board):
+            pass
+
+        def get_solution(self):
+            raise RecursionError("attempted 1001 of 1000 maximum allowed recursions")
+
+    monkeypatch.setattr("main.SudokuBacktracking", FailingSolver)
     home._on_solve()
 
-    for row in range(9):
-        for col in range(9):
-            assert _visual_cell(home, row, col).text == str(EXAMPLE_SOLUTION[row, col])
-
-
-def test_on_solve_invalid_puzzle_sets_status(home):
-    _set_cell(home, 0, 0, 1)
-    _set_cell(home, 0, 1, 1)
-
-    home._on_solve()
-
-    assert home.status.text == ERROR_TEXT
-    assert _visual_cell(home, 0, 0).text == "1"
-    assert _visual_cell(home, 0, 1).text == "1"
+    assert home.status.text == UNSOLVABLE_PUZZLE_TEXT
+    assert _visual_cell(home, 0, 0).text == "4"
+    assert _visual_cell(home, 0, 3).text == "6"
 
 
 def test_keep_board_square_uses_smaller_dimension(home):

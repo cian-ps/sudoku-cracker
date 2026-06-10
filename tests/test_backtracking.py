@@ -1,7 +1,8 @@
+import numpy as np
 import pytest
 
 from modules.backtracking import SudokuBacktracking
-import numpy as np
+from modules.backtracking import _RECURSION_LIMIT
 
 
 def test_is_valid_number_in_cell():
@@ -17,7 +18,7 @@ def test_is_valid_number_in_cell():
 
 def test_recursion_limit():
     solver = SudokuBacktracking(np.zeros((9, 9), dtype=np.int64))
-    solver._SudokuBacktracking__n_recursions = 1000
+    solver._SudokuBacktracking__n_recursions = _RECURSION_LIMIT
     with pytest.raises(RecursionError):
         solver.get_solution()
 
@@ -31,20 +32,6 @@ def test_raises_recursion_error():
         solver.get_solution()
 
 
-def test_get_solution():
-    solution = np.array(
-        [
-            [1, 2, 3, 4, 5, 6, 7, 8, 9],
-            [4, 5, 6, 7, 8, 9, 1, 2, 3],
-            [7, 8, 9, 1, 2, 3, 4, 5, 6],
-            [2, 1, 4, 3, 6, 5, 8, 9, 7],
-            [3, 6, 5, 8, 9, 7, 2, 1, 4],
-            [8, 9, 7, 2, 1, 4, 3, 6, 5],
-            [5, 3, 1, 6, 4, 2, 9, 7, 8],
-            [6, 4, 2, 9, 7, 8, 5, 3, 1],
-            [9, 7, 8, 5, 3, 1, 6, 4, 2],
-        ],
-        dtype=np.int64,
-    )
-    solver = SudokuBacktracking(np.zeros((9, 9), dtype=np.int64))
-    assert np.array_equal(solver.get_solution(), solution)
+def test_get_solution(example, example_solution):
+    solver = SudokuBacktracking(example.copy())
+    assert np.array_equal(solver.get_solution(), example_solution)

@@ -5,7 +5,7 @@ from typing import Tuple
 import sys
 
 
-_RECURSION_LIMIT = 1000
+_RECURSION_LIMIT = 100000
 sys.setrecursionlimit(_RECURSION_LIMIT)
 
 

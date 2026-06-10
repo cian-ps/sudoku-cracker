@@ -25,7 +25,8 @@ Config.set("input", "mouse", "mouse,disable_multitouch")
 Config.set("kivy", "log_level", "info")
 Config.write()
 
-ERROR_TEXT = "Invalid or unsolvable puzzle"
+INVALID_PUZZLE_TEXT = "Invalid puzzle"
+UNSOLVABLE_PUZZLE_TEXT = "Unsolvable puzzle"
 
 
 class Home(BoxLayout):
@@ -145,6 +146,27 @@ class Home(BoxLayout):
         within_block = inner_row * 3 + inner_col
         return block_index * 9 + within_block
 
+    @staticmethod
+    def _is_puzzle_valid(board: np.ndarray) -> bool:
+        for row in range(9):
+            for col in range(9):
+                num = board[row, col]
+                if num == 0:
+                    continue
+                for c in range(9):
+                    if c != col and board[row, c] == num:
+                        return False
+                for r in range(9):
+                    if r != row and board[r, col] == num:
+                        return False
+                block_row = row // 3 * 3
+                block_col = col // 3 * 3
+                for r in range(block_row, block_row + 3):
+                    for c in range(block_col, block_col + 3):
+                        if (r, c) != (row, col) and board[r, c] == num:
+                            return False
+        return True
+
     def _board_to_ndarray(self) -> np.ndarray:
         board = np.zeros((9, 9), dtype=np.int64)
         for row in range(9):
@@ -167,11 +189,18 @@ class Home(BoxLayout):
     def _on_solve(self, *_args) -> None:
         self.status.text = ""
         board = self._board_to_ndarray()
+        if not self._is_puzzle_valid(board):
+            self.status.text = INVALID_PUZZLE_TEXT
+            logging.warning(
+                "Puzzle rejected: duplicate value in row, column, or 3x3 block"
+            )
+            return
         try:
             solution = SudokuBacktracking(board).get_solution()
             logging.debug(solution)
-        except RecursionError:
-            self.status.text = ERROR_TEXT
+        except RecursionError as e:
+            self.status.text = UNSOLVABLE_PUZZLE_TEXT
+            logging.error("%s", e)
             return
         self._apply_solution(solution)
 
