@@ -256,6 +256,11 @@ android.accept_sdk_license = True
 # Valid values can be found at https://developer.android.com/guide/topics/manifest/activity-element
 #android.manifest.orientation = fullSensor
 
+# Keyboard layout: main.py sets Window.softinput_mode = below_target so the
+# focused cell pans above the soft keyboard (adjustResize does not work with SDL2).
+# python-for-android already sets android:windowSoftInputMode="adjustResize" on the
+# main activity; Kivy/SDL2 handles the actual panning in below_target mode.
+
 # (list) Android additional libraries to copy into libs/armeabi
 #android.add_libs_armeabi = libs/android/*.so
 #android.add_libs_armeabi_v7a = libs/android-v7/*.so

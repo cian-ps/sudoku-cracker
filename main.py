@@ -5,6 +5,7 @@ import numpy as np
 import logging
 
 from kivy.app import App
+from kivy.core.window import Window
 from kivy.metrics import dp
 from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.boxlayout import BoxLayout
@@ -27,6 +28,7 @@ Config.write()
 
 INVALID_PUZZLE_TEXT = "Invalid puzzle"
 UNSOLVABLE_PUZZLE_TEXT = "Unsolvable puzzle"
+SOFTINPUT_MODE = "below_target"
 
 
 class Home(BoxLayout):
@@ -62,6 +64,7 @@ class Home(BoxLayout):
             background_active="",
             cursor_color=(0, 0, 0, 1),
             input_filter=self._digit_filter,
+            input_type="number",
         )
         cell.bind(
             focus=self._on_cell_focus,
@@ -207,6 +210,7 @@ class Home(BoxLayout):
 
 class MainApp(App):
     def build(self) -> Home:
+        Window.softinput_mode = SOFTINPUT_MODE
         return Home()
 
 

@@ -43,6 +43,20 @@ def test_home_cells_are_text_inputs(home):
     assert all(isinstance(cell, TextInput) for cell in home.cells)
 
 
+def test_cells_use_number_input_type(home):
+    assert all(cell.input_type == "number" for cell in home.cells)
+
+
+def test_main_app_sets_below_target_softinput_mode():
+    from kivy.core.window import Window
+
+    from main import MainApp
+    from main import SOFTINPUT_MODE
+
+    MainApp().build()
+    assert Window.softinput_mode == SOFTINPUT_MODE
+
+
 def test_cell_font_scales_with_size(home):
     cell = home.cells[0]
     cell.size = (30, 30)
