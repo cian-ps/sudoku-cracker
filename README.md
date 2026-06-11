@@ -1,8 +1,10 @@
 # Sudoku Cracker
 
+> Solve any Sudoku puzzle in seconds.
+
 ---
 
-> Solve any Sudoku puzzle in seconds.
+A free and open-source offline Sudoku solver for Android written in Python.
 
 ## Attributions
 
@@ -12,21 +14,15 @@
 
 <a href="https://www.flaticon.com/free-icons/sudoku" title="sudoku icons">Sudoku icons created by Freepik - Flaticon</a>
 
-## Setup
+## Development Setup
 
 ---
 
-Install app dependencies:
+Install dependencies:
 
 ```bash
-uv sync
-```
-
-### Development Setup
-
-Install development dependencies:
-
-```bash
+uv venv --python 3.12.3
+source .venv/bin/activate
 uv sync --all-extras
 ```
 
@@ -37,7 +33,7 @@ pre-commit install
 pre-commit run --all-files
 ```
 
-## Build
+## Build from source
 
 ---
 
@@ -131,4 +127,25 @@ buildozer android debug deploy run logcat
 - `assets/` (PNG images, including the app icon)
 
 The `tests/` directory is excluded. Runtime requirements are `python3`, `kivy`, and `numpy` (see `requirements` in `buildozer.spec`).
+
+## Branching strategy
+
+---
+
+This project follows a GitFlow-style workflow:
+
+- **`master`** — always reflects the latest stable release. Do not develop directly on this branch.
+- **`dev`** — integration branch where all day-to-day development lands.
+- **Feature branches** — branch from `dev`, merge back into `dev` when ready.
+- **Release branches** (e.g. `release/v1.0.0`) — used to prepare a release (version bumps, final fixes). When ready, merge into both `dev` and `master`.
+- **Tags** — every release is tagged on `master` (e.g. `v1.0.0`). Pushing a `v*` tag triggers the [Release APK](.github/workflows/release-apk.yml) workflow, which builds the APK and creates a GitHub Release. If a release build fails, you can re-run the workflow from the Actions tab or trigger it manually via **workflow_dispatch**.
+
+**CI** runs on pushes to `dev` and on pull requests targeting `master`. Pushing directly to `master` bypasses those checks, so prefer merging via pull request whenever possible.
+
+Typical release flow:
+
+1. Finish work on a release branch and merge it into `dev` and `master` (via pull requests).
+2. Tag the merge commit on `master`: `git tag v1.0.0 && git push origin v1.0.0`
+3. Wait for the Release APK workflow to complete, then verify the GitHub Release.
+4. Merge `master` back into `dev` if the release introduced any last-minute changes only on `master`.
 
