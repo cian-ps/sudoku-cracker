@@ -2,9 +2,9 @@ import numpy as np
 from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.textinput import TextInput
 
-from main import Home
-from main import INVALID_PUZZLE_TEXT
-from main import UNSOLVABLE_PUZZLE_TEXT
+from modules.home import Home
+from modules.home import INVALID_PUZZLE_TEXT
+from modules.home import UNSOLVABLE_PUZZLE_TEXT
 
 
 def _visual_cell(home, row, col):
@@ -167,7 +167,7 @@ def test_on_solve_unsolvable_sets_status(home, example, monkeypatch):
         def get_solution(self):
             raise RecursionError("attempted 1001 of 1000 maximum allowed recursions")
 
-    monkeypatch.setattr("main.SudokuBacktracking", FailingSolver)
+    monkeypatch.setattr("modules.home.SudokuBacktracking", FailingSolver)
     home._on_solve()
 
     assert home.status.text == UNSOLVABLE_PUZZLE_TEXT
