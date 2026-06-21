@@ -23,7 +23,7 @@ Install dependencies:
 ```bash
 uv venv --python 3.12.3
 source .venv/bin/activate
-uv sync --all-extras
+uv sync --extra dev
 ```
 
 Install and run pre-commit hooks:
