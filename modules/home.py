@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 
 import numpy as np
 from kivy.metrics import dp
@@ -13,16 +14,17 @@ from kivy.uix.label import Label
 from kivy.uix.textinput import TextInput
 
 from modules.backtracking import SudokuBacktracking
-
-INVALID_PUZZLE_TEXT = "Invalid puzzle"
-UNSOLVABLE_PUZZLE_TEXT = "Unsolvable puzzle"
+from modules.messages import INVALID_PUZZLE_TEXT, UNSOLVABLE_PUZZLE_TEXT
 
 
 class Home(BoxLayout):
-    def __init__(self, **kwargs) -> None:
+    def __init__(
+        self, on_camera: Callable[[], None] | None = None, **kwargs: object
+    ) -> None:
         super().__init__(
             orientation="vertical", padding=dp(10), spacing=dp(10), **kwargs
         )
+        self._on_camera = on_camera
         self.cells: list[TextInput] = []
         self._build_ui()
 
@@ -118,15 +120,31 @@ class Home(BoxLayout):
         solve_btn = Button(
             text="Solve", font_size="20sp", background_color=(0.2, 0.8, 1, 1)
         )
+
+        nav_btn_row = BoxLayout(
+            orientation="horizontal",
+            size_hint_y=None,
+            height=dp(50),
+            spacing=dp(10),
+        )
+        camera_btn = Button(text="Camera", font_size="20sp")
+
         clear_btn.bind(on_press=self._on_clear)
         solve_btn.bind(on_press=self._on_solve)
+
+        if self._on_camera is not None:
+            camera_btn.bind(on_press=lambda *_: self._on_camera())
+
         button_row.add_widget(clear_btn)
         button_row.add_widget(solve_btn)
+
+        nav_btn_row.add_widget(camera_btn)
 
         self.add_widget(title)
         self.add_widget(self.status)
         self.add_widget(grid_area)
         self.add_widget(button_row)
+        self.add_widget(nav_btn_row)
 
     @staticmethod
     def _cell_index(row: int, col: int) -> int:
@@ -170,6 +188,14 @@ class Home(BoxLayout):
             for col in range(9):
                 val = solution[row, col]
                 self.cells[self._cell_index(row, col)].text = str(val) if val else ""
+
+    def apply_board(self, board: np.ndarray) -> None:
+        self.status.text = ""
+        for row in range(9):
+            for col in range(9):
+                val = int(board[row, col])
+                cell = self.cells[self._cell_index(row, col)]
+                cell.text = str(val) if 1 <= val <= 9 else ""
 
     def _on_clear(self, *_args) -> None:
         self.status.text = ""

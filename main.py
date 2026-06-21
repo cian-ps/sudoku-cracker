@@ -1,13 +1,16 @@
 from __future__ import annotations
 
-import os
 import logging
+import os
 
 from kivy.app import App
-from kivy.core.window import Window
 from kivy.config import Config
+from kivy.core.window import Window
+from kivy.uix.screenmanager import ScreenManager
 
+from modules.camera import Camera
 from modules.home import Home
+from modules.screens import CAMERA_SCREEN, HOME_SCREEN, build_screen_manager
 
 os.environ.setdefault("KIVY_NO_ARGS", "1")
 logging.basicConfig(level=logging.DEBUG)
@@ -21,9 +24,27 @@ SOFTINPUT_MODE = "below_target"
 
 
 class MainApp(App):
-    def build(self) -> Home:
+    def __init__(self, **kwargs: object) -> None:
+        super().__init__(**kwargs)
+        self._home = Home(on_camera=self._open_camera)
+        self._camera = Camera(
+            on_capture=self._on_capture,
+            on_cancel=self._show_home,
+        )
+        self._sm = build_screen_manager(self._home, self._camera)
+
+    def build(self) -> ScreenManager:
         Window.softinput_mode = SOFTINPUT_MODE
-        return Home()
+        return self._sm
+
+    def _open_camera(self) -> None:
+        self._sm.current = CAMERA_SCREEN
+
+    def _show_home(self) -> None:
+        self._sm.current = HOME_SCREEN
+
+    def _on_capture(self) -> None:
+        pass
 
 
 if __name__ == "__main__":

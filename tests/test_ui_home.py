@@ -3,8 +3,10 @@ from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.textinput import TextInput
 
 from modules.home import Home
-from modules.home import INVALID_PUZZLE_TEXT
-from modules.home import UNSOLVABLE_PUZZLE_TEXT
+from modules.messages import (
+    INVALID_PUZZLE_TEXT,
+    UNSOLVABLE_PUZZLE_TEXT,
+)
 
 
 def _visual_cell(home, row, col):
@@ -179,3 +181,29 @@ def test_keep_board_square_uses_smaller_dimension(home):
     container = AnchorLayout(size=(400, 200))
     home._keep_board_square(container)
     assert tuple(home.board.size) == (200, 200)
+
+
+def test_apply_board_fills_digits_and_leaves_zeros_blank(home):
+    board = np.zeros((9, 9), dtype=np.int64)
+    board[0, 0] = 7
+    board[4, 4] = 3
+
+    home.apply_board(board)
+
+    assert _visual_cell(home, 0, 0).text == "7"
+    assert _visual_cell(home, 4, 4).text == "3"
+    assert _visual_cell(home, 0, 1).text == ""
+
+
+def test_apply_board_clears_status(home):
+    home.status.text = INVALID_PUZZLE_TEXT
+    home.apply_board(np.zeros((9, 9), dtype=np.int64))
+    assert home.status.text == ""
+
+
+def test_scan_button_triggers_callback() -> None:
+    called = {"value": False}
+    home = Home(on_camera=lambda: called.update(value=True))
+    assert home._on_camera is not None
+    home._on_camera()
+    assert called["value"] is True
