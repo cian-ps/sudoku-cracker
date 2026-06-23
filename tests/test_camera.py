@@ -37,14 +37,14 @@ class _FakeCapture:
 def test_back_calls_on_cancel() -> None:
     cancelled = {"value": False}
     camera = Camera(
-        on_capture=lambda: None, on_cancel=lambda: cancelled.update(value=True)
+        on_capture=lambda _: None, on_cancel=lambda: cancelled.update(value=True)
     )
     camera._handle_back()
     assert cancelled["value"] is True
 
 
 def test_on_enter_shows_unavailable_when_camera_fails() -> None:
-    camera = Camera(on_capture=lambda: None, on_cancel=lambda: None)
+    camera = Camera(on_capture=lambda _: None, on_cancel=lambda: None)
     with patch(
         "modules.camera.cv2.VideoCapture", return_value=_FakeCapture(opened=False)
     ):
@@ -55,7 +55,7 @@ def test_on_enter_shows_unavailable_when_camera_fails() -> None:
 
 
 def test_scan_without_frame_shows_error() -> None:
-    camera = Camera(on_capture=lambda: None, on_cancel=lambda: None)
+    camera = Camera(on_capture=lambda _: None, on_cancel=lambda: None)
     camera._frame = None
     camera._handle_scan()
     assert camera._status.text == CAMERA_NO_FRAME_TEXT
@@ -63,7 +63,7 @@ def test_scan_without_frame_shows_error() -> None:
 
 
 def test_read_failure_disables_scan() -> None:
-    camera = Camera(on_capture=lambda: None, on_cancel=lambda: None)
+    camera = Camera(on_capture=lambda _: None, on_cancel=lambda: None)
     fake: object = _FakeCapture(readable=False)
     camera._vidcap = fake  # type: ignore[assignment]
     camera._update()
@@ -73,7 +73,7 @@ def test_read_failure_disables_scan() -> None:
 
 
 def test_on_leave_releases_capture_and_unschedules() -> None:
-    camera = Camera(on_capture=lambda: None, on_cancel=lambda: None)
+    camera = Camera(on_capture=lambda _: None, on_cancel=lambda: None)
 
     with patch(
         "modules.camera.cv2.VideoCapture", return_value=_FakeCapture()

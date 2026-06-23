@@ -13,6 +13,13 @@ from kivy.uix.button import Button
 from kivy.uix.image import Image
 from kivy.uix.label import Label
 
+from modules.image_parsing import (
+    extract_grid,
+    draw_contour,
+    InferenceEngine,
+    ObjectDetectionError,
+    OCRMismatchError,
+)
 from modules.messages import (
     CAMERA_FRAME_ERROR_TEXT,
     CAMERA_NO_FRAME_TEXT,
@@ -25,7 +32,7 @@ _FRAME_INTERVAL = 1.0 / 30.0
 class Camera(BoxLayout):
     def __init__(
         self,
-        on_capture: Callable[[], None],
+        on_capture: Callable[[np.ndarray], None],
         on_cancel: Callable[[], None],
         **kwargs: object,
     ) -> None:
@@ -99,7 +106,7 @@ class Camera(BoxLayout):
             self._scan_btn.disabled = True
             return
 
-        self._frame = frame
+        self._frame = frame.copy()
         if self._status.text in {
             CAMERA_FRAME_ERROR_TEXT,
             CAMERA_NO_FRAME_TEXT,
@@ -107,6 +114,7 @@ class Camera(BoxLayout):
             self._status.text = ""
         self._scan_btn.disabled = False
 
+        draw_contour(frame)
         buffer = cv2.flip(frame, 0).tobytes()
         texture = Texture.create(size=(frame.shape[1], frame.shape[0]), colorfmt="bgr")
         texture.blit_buffer(buffer, colorfmt="bgr", bufferfmt="ubyte")
@@ -122,4 +130,17 @@ class Camera(BoxLayout):
             self._scan_btn.disabled = True
             return
 
-        self._on_capture()
+        try:
+            grid = extract_grid(self._frame)
+            ocr = InferenceEngine(grid)
+            preds_array = ocr.parse_to_numpy()
+        except ObjectDetectionError as e:
+            logging.error(e)
+            return
+        except OCRMismatchError as e:
+            logging.error(e)
+            return
+        except Exception as e:
+            logging.error(e)
+            return
+        self._on_capture(preds_array)

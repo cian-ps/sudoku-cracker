@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import os
 
+import numpy as np
 from kivy.app import App
 from kivy.config import Config
 from kivy.core.window import Window
@@ -43,8 +44,9 @@ class MainApp(App):
     def _show_home(self) -> None:
         self._sm.current = HOME_SCREEN
 
-    def _on_capture(self) -> None:
-        pass
+    def _on_capture(self, ocr_result: np.ndarray) -> None:
+        self._home.apply_board(ocr_result)
+        self._show_home()
 
 
 if __name__ == "__main__":
