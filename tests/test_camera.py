@@ -9,12 +9,12 @@ import pytest
 from modules.camera import Camera
 from modules.messages import (
     CAMERA_FRAME_ERROR_TEXT,
-    CAMERA_GRID_NOT_FOUND_TEXT,
     CAMERA_NO_FRAME_TEXT,
-    CAMERA_OCR_MISMATCH_TEXT,
-    CAMERA_OCR_UNAVAILABLE_TEXT,
-    CAMERA_SCAN_FAILED_TEXT,
     CAMERA_UNAVAILABLE_TEXT,
+    GRID_NOT_FOUND_TEXT,
+    OCR_MISMATCH_TEXT,
+    OCR_UNAVAILABLE_TEXT,
+    SCAN_FAILED_TEXT,
 )
 from modules.image_parsing import ObjectDetectionError, OCREngineError, OCRMismatchError
 
@@ -112,9 +112,9 @@ def test_on_leave_releases_capture_and_unschedules() -> None:
 @pytest.mark.parametrize(
     ("side_effect", "expected_text"),
     [
-        (ObjectDetectionError("no grid"), CAMERA_GRID_NOT_FOUND_TEXT),
-        (OCRMismatchError("mismatch"), CAMERA_OCR_MISMATCH_TEXT),
-        (RuntimeError("boom"), CAMERA_SCAN_FAILED_TEXT),
+        (ObjectDetectionError("no grid"), GRID_NOT_FOUND_TEXT),
+        (OCRMismatchError("mismatch"), OCR_MISMATCH_TEXT),
+        (RuntimeError("boom"), SCAN_FAILED_TEXT),
     ],
 )
 def test_scan_errors_show_user_message(
@@ -144,7 +144,7 @@ def test_scan_ocr_unavailable_shows_user_message() -> None:
     ):
         _run_scan_synchronously(camera)
 
-    assert camera._status.text == CAMERA_OCR_UNAVAILABLE_TEXT
+    assert camera._status.text == OCR_UNAVAILABLE_TEXT
     assert camera._scan_btn.disabled is False
 
 
@@ -202,16 +202,16 @@ def test_scan_error_persists_across_camera_frames() -> None:
     ):
         _run_scan_synchronously(camera)
 
-    assert camera._status.text == CAMERA_GRID_NOT_FOUND_TEXT
+    assert camera._status.text == GRID_NOT_FOUND_TEXT
     with patch("modules.camera.draw_contour"):
         camera._update()
-    assert camera._status.text == CAMERA_GRID_NOT_FOUND_TEXT
+    assert camera._status.text == GRID_NOT_FOUND_TEXT
 
 
 def test_scan_error_cleared_on_retry() -> None:
     camera = Camera(on_capture=lambda _: None, on_cancel=lambda: None)
     camera._frame = _dummy_frame()
-    camera._status.text = CAMERA_GRID_NOT_FOUND_TEXT
+    camera._status.text = GRID_NOT_FOUND_TEXT
 
     with patch("modules.camera.Camera._run_scan"):
         with patch("modules.camera.threading.Thread") as mock_thread:
@@ -300,6 +300,6 @@ def test_finish_scan_error_ignored_when_cancelled() -> None:
     camera = Camera(on_capture=lambda _: None, on_cancel=lambda: None)
     camera._scan_cancelled = True
 
-    camera._finish_scan_error(CAMERA_SCAN_FAILED_TEXT)
+    camera._finish_scan_error(SCAN_FAILED_TEXT)
 
     assert camera._status.text == ""

@@ -19,12 +19,16 @@ from modules.messages import INVALID_PUZZLE_TEXT, UNSOLVABLE_PUZZLE_TEXT
 
 class Home(BoxLayout):
     def __init__(
-        self, on_camera: Callable[[], None] | None = None, **kwargs: object
+        self,
+        on_camera: Callable[[], None] | None = None,
+        on_file_select: Callable[[], None] | None = None,
+        **kwargs: object,
     ) -> None:
         super().__init__(
             orientation="vertical", padding=dp(10), spacing=dp(10), **kwargs
         )
         self._on_camera = on_camera
+        self._on_file_select = on_file_select
         self.cells: list[TextInput] = []
         self._build_ui()
 
@@ -128,17 +132,21 @@ class Home(BoxLayout):
             spacing=dp(10),
         )
         camera_btn = Button(text="Camera", font_size="20sp")
+        file_btn = Button(text="Select File", font_size="20sp")
 
         clear_btn.bind(on_press=self._on_clear)
         solve_btn.bind(on_press=self._on_solve)
 
         if self._on_camera is not None:
             camera_btn.bind(on_press=lambda *_: self._on_camera())
+        if self._on_file_select is not None:
+            file_btn.bind(on_press=lambda *_: self._on_file_select())
 
         button_row.add_widget(clear_btn)
         button_row.add_widget(solve_btn)
 
         nav_btn_row.add_widget(camera_btn)
+        nav_btn_row.add_widget(file_btn)
 
         self.add_widget(title)
         self.add_widget(self.status)

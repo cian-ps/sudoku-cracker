@@ -242,3 +242,11 @@ def test_scan_button_triggers_callback():
     assert home._on_camera is not None
     home._on_camera()
     assert called["value"] is True
+
+
+def test_select_file_button_triggers_callback():
+    called = {"value": False}
+    home = Home(on_file_select=lambda: called.update(value=True))
+    assert home._on_file_select is not None
+    home._on_file_select()
+    assert called["value"] is True

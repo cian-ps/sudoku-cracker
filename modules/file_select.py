@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 import threading
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 
 import cv2
 import numpy as np
@@ -15,19 +15,19 @@ from kivy.uix.image import Image
 from kivy.uix.label import Label
 from kivy.uix.modalview import ModalView
 from kivy.uix.progressbar import ProgressBar
+from plyer import filechooser
 
 from modules.image_parsing import (
-    extract_grid,
-    draw_contour,
     InferenceEngine,
     ObjectDetectionError,
     OCREngineError,
     OCRMismatchError,
+    extract_grid,
 )
 from modules.messages import (
-    CAMERA_FRAME_ERROR_TEXT,
-    CAMERA_NO_FRAME_TEXT,
-    CAMERA_UNAVAILABLE_TEXT,
+    FILE_LOAD_FAILED_TEXT,
+    FILE_NONE_SELECTED_TEXT,
+    FILE_NO_IMAGE_TEXT,
     GRID_NOT_FOUND_TEXT,
     OCR_MISMATCH_TEXT,
     OCR_UNAVAILABLE_TEXT,
@@ -35,14 +35,7 @@ from modules.messages import (
     SCANNING_TEXT,
 )
 
-_CAMERA_TRANSIENT_STATUS_TEXTS = frozenset(
-    {
-        CAMERA_FRAME_ERROR_TEXT,
-        CAMERA_NO_FRAME_TEXT,
-    }
-)
-
-_CAMERA_SCAN_ERROR_TEXTS = frozenset(
+_FILE_SCAN_ERROR_TEXTS = frozenset(
     {
         GRID_NOT_FOUND_TEXT,
         OCR_MISMATCH_TEXT,
@@ -51,10 +44,10 @@ _CAMERA_SCAN_ERROR_TEXTS = frozenset(
     }
 )
 
-_FRAME_INTERVAL = 1.0 / 30.0
+_IMAGE_FILTER = [["Images", "*.png", "*.jpg", "*.jpeg", "*.bmp", "*.webp"]]
 
 
-class Camera(BoxLayout):
+class FileSelect(BoxLayout):
     def __init__(
         self,
         on_capture: Callable[[np.ndarray], None],
@@ -66,9 +59,8 @@ class Camera(BoxLayout):
         )
         self._on_capture = on_capture
         self._on_cancel = on_cancel
-        self._frame: np.ndarray | None = None
-        self._vidcap: cv2.VideoCapture | None = None
-        self._update_event = None
+        self._image: np.ndarray | None = None
+        self._file_path: str | None = None
         self._scanning = False
         self._scan_cancelled = False
         self._scan_modal: ModalView | None = None
@@ -89,12 +81,12 @@ class Camera(BoxLayout):
             spacing=dp(10),
         )
         self._back_btn = Button(text="Back", font_size="20sp")
-        self._scan_btn = Button(text="Scan", font_size="20sp")
+        self._continue_btn = Button(text="Continue", font_size="20sp")
         self._back_btn.bind(on_press=self._handle_back)
-        self._scan_btn.bind(on_press=self._handle_scan)
+        self._continue_btn.bind(on_press=self._handle_continue)
 
         button_row.add_widget(self._back_btn)
-        button_row.add_widget(self._scan_btn)
+        button_row.add_widget(self._continue_btn)
 
         self.add_widget(self._preview)
         self.add_widget(self._status)
@@ -102,52 +94,65 @@ class Camera(BoxLayout):
 
     def on_enter(self) -> None:
         self._status.text = ""
-        self._frame = None
+        self._image = None
+        self._file_path = None
         self._scanning = False
         self._scan_cancelled = False
         self._scan_modal = None
-        self._vidcap = cv2.VideoCapture(0)
-        if not self._vidcap.isOpened():
-            logging.error("VideoCapture(0) failed to open camera")
-            self._status.text = CAMERA_UNAVAILABLE_TEXT
-            self._scan_btn.disabled = True
-            return
-
-        self._scan_btn.disabled = False
-        self._update_event = Clock.schedule_interval(self._update, _FRAME_INTERVAL)
+        self._continue_btn.disabled = True
+        self._clear_preview()
+        filechooser.open_file(
+            on_selection=self._on_file_chosen,
+            filters=_IMAGE_FILTER,
+        )
 
     def on_leave(self) -> None:
         self._scan_cancelled = True
         self._dismiss_scan_modal()
         self._scanning = False
-        if self._update_event is not None:
-            Clock.unschedule(self._update_event)
-            self._update_event = None
-        if self._vidcap is not None:
-            self._vidcap.release()
-            self._vidcap = None
-        self._frame = None
+        self._image = None
+        self._file_path = None
+        self._clear_preview()
 
-    def _update(self, *_args: object) -> None:
-        if self._vidcap is None or self._scanning:
+    def _on_file_chosen(self, paths: Sequence[str]) -> None:
+        Clock.schedule_once(lambda _dt: self._handle_file_selection(paths), 0)
+
+    def _handle_file_selection(self, paths: Sequence[str]) -> None:
+        if self._scan_cancelled:
             return
 
-        ret, frame = self._vidcap.read()
-        if not ret:
-            logging.warning("VideoCapture.read() failed")
-            self._frame = None
-            self._status.text = CAMERA_FRAME_ERROR_TEXT
-            self._scan_btn.disabled = True
+        if not paths:
+            logging.warning("File selection cancelled or empty")
+            self._status.text = FILE_NONE_SELECTED_TEXT
+            self._image = None
+            self._file_path = None
+            self._clear_preview()
+            self._continue_btn.disabled = True
             return
 
-        self._frame = frame.copy()
-        if self._status.text in _CAMERA_TRANSIENT_STATUS_TEXTS:
-            self._status.text = ""
-        self._scan_btn.disabled = False
+        path = paths[0]
+        image = cv2.imread(path)
+        if image is None:
+            logging.error("cv2.imread failed for %s", path)
+            self._status.text = FILE_LOAD_FAILED_TEXT
+            self._image = None
+            self._file_path = None
+            self._clear_preview()
+            self._continue_btn.disabled = True
+            return
 
-        draw_contour(frame)
-        buffer = cv2.flip(frame, 0).tobytes()
-        texture = Texture.create(size=(frame.shape[1], frame.shape[0]), colorfmt="bgr")
+        self._status.text = ""
+        self._image = image
+        self._file_path = path
+        self._update_preview(image)
+        self._continue_btn.disabled = False
+
+    def _clear_preview(self) -> None:
+        self._preview.texture = None
+
+    def _update_preview(self, image: np.ndarray) -> None:
+        buffer = cv2.flip(image, 0).tobytes()
+        texture = Texture.create(size=(image.shape[1], image.shape[0]), colorfmt="bgr")
         texture.blit_buffer(buffer, colorfmt="bgr", bufferfmt="ubyte")
         self._preview.texture = texture
 
@@ -190,7 +195,7 @@ class Camera(BoxLayout):
     def _set_scan_ui_active(self, active: bool) -> None:
         self._scanning = active
         self._back_btn.disabled = active
-        self._scan_btn.disabled = active
+        self._continue_btn.disabled = active
 
     def _run_scan(self, frame: np.ndarray) -> None:
         try:
@@ -246,21 +251,23 @@ class Camera(BoxLayout):
         self._dismiss_scan_modal()
         self._set_scan_ui_active(False)
         self._status.text = message
+        if self._image is not None:
+            self._continue_btn.disabled = False
 
-    def _handle_scan(self, *_args: object) -> None:
+    def _handle_continue(self, *_args: object) -> None:
         if self._scanning:
             return
 
-        if self._status.text in _CAMERA_SCAN_ERROR_TEXTS:
+        if self._status.text in _FILE_SCAN_ERROR_TEXTS:
             self._status.text = ""
 
-        if self._frame is None:
-            logging.warning("Scan pressed with no camera frame available")
-            self._status.text = CAMERA_NO_FRAME_TEXT
-            self._scan_btn.disabled = True
+        if self._image is None:
+            logging.warning("Continue pressed with no image available")
+            self._status.text = FILE_NO_IMAGE_TEXT
+            self._continue_btn.disabled = True
             return
 
-        frame = self._frame.copy()
+        frame = self._image.copy()
         self._set_scan_ui_active(True)
         self._scan_modal = self._show_scan_modal()
 
