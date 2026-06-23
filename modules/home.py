@@ -13,7 +13,7 @@ from kivy.uix.image import Image
 from kivy.uix.label import Label
 from kivy.uix.textinput import TextInput
 
-from modules.backtracking import SudokuBacktracking
+from modules.backtracking import SudokuBacktracking, BacktrackingError
 from modules.messages import INVALID_PUZZLE_TEXT, UNSOLVABLE_PUZZLE_TEXT
 
 
@@ -216,6 +216,14 @@ class Home(BoxLayout):
             logging.debug(solution)
         except RecursionError as e:
             self.status.text = UNSOLVABLE_PUZZLE_TEXT
+            logging.error("%s", e)
+            return
+        except BacktrackingError as e:
+            self.status.text = UNSOLVABLE_PUZZLE_TEXT
+            logging.error("%s", e)
+            return
+        except Exception as e:
+            self.status.text = "An unexpected error occurred."
             logging.error("%s", e)
             return
         self._apply_solution(solution)
