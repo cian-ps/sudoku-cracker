@@ -21,6 +21,7 @@ from modules.image_parsing import (
     draw_contour,
     InferenceEngine,
     ObjectDetectionError,
+    OCREngineError,
     OCRMismatchError,
 )
 from modules.messages import (
@@ -28,6 +29,7 @@ from modules.messages import (
     CAMERA_GRID_NOT_FOUND_TEXT,
     CAMERA_NO_FRAME_TEXT,
     CAMERA_OCR_MISMATCH_TEXT,
+    CAMERA_OCR_UNAVAILABLE_TEXT,
     CAMERA_SCAN_FAILED_TEXT,
     CAMERA_SCANNING_TEXT,
     CAMERA_UNAVAILABLE_TEXT,
@@ -44,6 +46,7 @@ _CAMERA_SCAN_ERROR_TEXTS = frozenset(
     {
         CAMERA_GRID_NOT_FOUND_TEXT,
         CAMERA_OCR_MISMATCH_TEXT,
+        CAMERA_OCR_UNAVAILABLE_TEXT,
         CAMERA_SCAN_FAILED_TEXT,
     }
 )
@@ -207,6 +210,15 @@ class Camera(BoxLayout):
             logging.error(e)
             Clock.schedule_once(
                 lambda _dt, msg=CAMERA_OCR_MISMATCH_TEXT: self._finish_scan_error(msg),
+                0,
+            )
+            return
+        except OCREngineError as e:
+            logging.error(e)
+            Clock.schedule_once(
+                lambda _dt, msg=CAMERA_OCR_UNAVAILABLE_TEXT: self._finish_scan_error(
+                    msg
+                ),
                 0,
             )
             return

@@ -30,6 +30,11 @@ dev = [
 [tool.mypy]
 ignore_missing_imports = true
 
+[tool.pytest.ini_options]
+markers = [
+    "no_mock_ocr: disable the autouse OCR engine mock for a test",
+]
+
 [tool.ruff]
 exclude = [
     "*.ipynb"

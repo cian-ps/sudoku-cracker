@@ -1,16 +1,35 @@
 import os
+from collections.abc import Iterator
+from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
 from kivy.config import Config
 
 from modules.home import Home
+from modules.image_parsing import clear_ocr_engine_cache
 
 os.environ.setdefault("KIVY_NO_ARGS", "1")
+os.environ.setdefault("DISABLE_MODEL_SOURCE_CHECK", "True")
 
 Config.set("graphics", "headless", "1")
 Config.set("kivy", "log_level", "error")
 Config.write()
+
+
+@pytest.fixture(autouse=True)
+def mock_ocr_engine(request: pytest.FixtureRequest) -> Iterator[MagicMock | None]:
+    clear_ocr_engine_cache()
+    if request.node.get_closest_marker("no_mock_ocr") is not None:
+        yield None
+        clear_ocr_engine_cache()
+        return
+
+    mock_ocr = MagicMock()
+    mock_ocr.predict.return_value = [{"rec_texts": []}]
+    with patch("modules.image_parsing._get_paddle_ocr", return_value=mock_ocr):
+        yield mock_ocr
+    clear_ocr_engine_cache()
 
 
 @pytest.fixture

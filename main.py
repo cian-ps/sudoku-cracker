@@ -14,6 +14,7 @@ from modules.home import Home
 from modules.screens import CAMERA_SCREEN, HOME_SCREEN, build_screen_manager
 
 os.environ.setdefault("KIVY_NO_ARGS", "1")
+os.environ.setdefault("DISABLE_MODEL_SOURCE_CHECK", "True")
 logging.basicConfig(level=logging.DEBUG)
 
 Config.set("graphics", "headless", "0")

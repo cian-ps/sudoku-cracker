@@ -12,10 +12,11 @@ from modules.messages import (
     CAMERA_GRID_NOT_FOUND_TEXT,
     CAMERA_NO_FRAME_TEXT,
     CAMERA_OCR_MISMATCH_TEXT,
+    CAMERA_OCR_UNAVAILABLE_TEXT,
     CAMERA_SCAN_FAILED_TEXT,
     CAMERA_UNAVAILABLE_TEXT,
 )
-from modules.image_parsing import ObjectDetectionError, OCRMismatchError
+from modules.image_parsing import ObjectDetectionError, OCREngineError, OCRMismatchError
 
 
 def _dummy_frame() -> np.ndarray:
@@ -128,6 +129,23 @@ def test_scan_errors_show_user_message(
     assert camera._status.text == expected_text
     assert camera._scan_btn.disabled is False
     assert camera._scan_modal is None
+
+
+def test_scan_ocr_unavailable_shows_user_message() -> None:
+    camera = Camera(on_capture=lambda _: None, on_cancel=lambda: None)
+    camera._frame = _dummy_frame()
+
+    with (
+        patch("modules.camera.extract_grid", return_value=_dummy_frame()),
+        patch(
+            "modules.camera.InferenceEngine",
+            side_effect=OCREngineError("Failed to initialize OCR engine."),
+        ),
+    ):
+        _run_scan_synchronously(camera)
+
+    assert camera._status.text == CAMERA_OCR_UNAVAILABLE_TEXT
+    assert camera._scan_btn.disabled is False
 
 
 def test_scan_success_calls_on_capture() -> None:

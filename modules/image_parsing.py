@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import threading
 from typing import Any
 
 import cv2
 import numpy as np
-from paddleocr import PaddleOCR
+
+_ocr_instance: Any | None = None
+_ocr_lock = threading.Lock()
 
 
 class OCRMismatchError(Exception):
@@ -25,9 +28,45 @@ class ObjectDetectionError(Exception):
         super().__init__(message)
 
 
+class OCREngineError(Exception):
+    """
+    Exception raised when the OCR engine cannot be initialized.
+    """
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
+
+
+def _get_paddle_ocr() -> Any:
+    global _ocr_instance
+
+    if _ocr_instance is not None:
+        return _ocr_instance
+
+    with _ocr_lock:
+        if _ocr_instance is not None:
+            return _ocr_instance
+
+        try:
+            from paddleocr import PaddleOCR
+
+            _ocr_instance = PaddleOCR(lang="en")
+        except Exception as exc:
+            raise OCREngineError("Failed to initialize OCR engine.") from exc
+
+    return _ocr_instance
+
+
+def clear_ocr_engine_cache() -> None:
+    global _ocr_instance
+
+    with _ocr_lock:
+        _ocr_instance = None
+
+
 class _OCREngine:
     def __init__(self) -> None:
-        self._ocr = PaddleOCR(lang="en")
+        self._ocr = _get_paddle_ocr()
 
     def predict(self, image: np.ndarray) -> list[Any]:
         """
