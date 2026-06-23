@@ -51,7 +51,7 @@ def example():
             [0, 0, 0, 8, 2, 0, 6, 0, 9],
             [2, 0, 0, 0, 0, 1, 0, 0, 4],
         ],
-        dtype=np.int64,
+        dtype=np.uint8,
     )
 
 
@@ -69,7 +69,7 @@ def example_solution():
             [3, 1, 7, 8, 2, 4, 6, 5, 9],
             [2, 9, 6, 7, 5, 1, 3, 8, 4],
         ],
-        dtype=np.int64,
+        dtype=np.uint8,
     )
 
 
@@ -87,5 +87,5 @@ def unsolvable_puzzle():
             [0, 0, 0, 0, 0, 0, 0, 0, 0],
             [0, 0, 0, 0, 0, 0, 0, 0, 0],
         ],
-        dtype=np.int64,
+        dtype=np.uint8,
     )

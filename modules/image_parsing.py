@@ -139,7 +139,7 @@ class InferenceEngine(_OCREngine):
         Raises:
             OCRMismatchError: If the number of predictions does not match the number of populated cells.
         """
-        result = np.zeros((9, 9), dtype=np.int64)
+        result = np.zeros((9, 9), dtype=np.uint8)
         expected_len = int(np.sum(self._std_mask))
         if len(self._preds) != expected_len:
             raise OCRMismatchError(

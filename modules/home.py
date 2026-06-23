@@ -176,7 +176,7 @@ class Home(BoxLayout):
         return True
 
     def _board_to_ndarray(self) -> np.ndarray:
-        board = np.zeros((9, 9), dtype=np.int64)
+        board = np.zeros((9, 9), dtype=np.uint8)
         for row in range(9):
             for col in range(9):
                 text = self.cells[self._cell_index(row, col)].text.strip()

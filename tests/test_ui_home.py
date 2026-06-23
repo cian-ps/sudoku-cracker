@@ -108,7 +108,7 @@ def test_is_puzzle_valid_rejects_duplicate_in_row(example):
 def test_board_to_ndarray_empty(home):
     board = home._board_to_ndarray()
     assert board.shape == (9, 9)
-    assert board.dtype == np.int64
+    assert board.dtype == np.uint8
     assert np.all(board == 0)
 
 
@@ -219,7 +219,7 @@ def test_keep_board_square_uses_smaller_dimension(home):
 
 
 def test_apply_board_fills_digits_and_leaves_zeros_blank(home):
-    board = np.zeros((9, 9), dtype=np.int64)
+    board = np.zeros((9, 9), dtype=np.uint8)
     board[0, 0] = 7
     board[4, 4] = 3
 
@@ -232,7 +232,7 @@ def test_apply_board_fills_digits_and_leaves_zeros_blank(home):
 
 def test_apply_board_clears_status(home):
     home.status.text = INVALID_PUZZLE_TEXT
-    home.apply_board(np.zeros((9, 9), dtype=np.int64))
+    home.apply_board(np.zeros((9, 9), dtype=np.uint8))
     assert home.status.text == ""
 
 

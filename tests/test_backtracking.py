@@ -6,7 +6,7 @@ from modules.backtracking import _RECURSION_LIMIT
 
 
 def test_is_valid_number_in_cell():
-    mat = np.zeros((9, 9), dtype=np.int64)
+    mat = np.zeros((9, 9), dtype=np.uint8)
     mat[0, 0] = 1
 
     solver = SudokuBacktracking(mat)
@@ -17,14 +17,14 @@ def test_is_valid_number_in_cell():
 
 
 def test_recursion_limit():
-    solver = SudokuBacktracking(np.zeros((9, 9), dtype=np.int64))
+    solver = SudokuBacktracking(np.zeros((9, 9), dtype=np.uint8))
     solver._SudokuBacktracking__n_recursions = _RECURSION_LIMIT
     with pytest.raises(RecursionError):
         solver.get_solution()
 
 
 def test_raises_recursion_error():
-    mat = np.zeros((9, 9), dtype=np.int64)
+    mat = np.zeros((9, 9), dtype=np.uint8)
     mat[0, 0] = 1
     mat[0, 1] = 1
     solver = SudokuBacktracking(mat)

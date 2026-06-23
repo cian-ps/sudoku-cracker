@@ -155,7 +155,7 @@ def test_scan_success_calls_on_capture() -> None:
         on_cancel=lambda: None,
     )
     camera._frame = _dummy_frame()
-    expected = np.arange(81, dtype=np.int64).reshape(9, 9)
+    expected = np.arange(81, dtype=np.uint8).reshape(9, 9)
 
     with (
         patch("modules.camera.extract_grid", return_value=_dummy_frame()),
@@ -291,7 +291,7 @@ def test_on_leave_cancels_pending_scan_result() -> None:
             camera._handle_scan()
 
     camera.on_leave()
-    camera._finish_scan_success(np.zeros((9, 9), dtype=np.int64))
+    camera._finish_scan_success(np.zeros((9, 9), dtype=np.uint8))
 
     assert captured["value"] is False
 
