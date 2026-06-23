@@ -3,6 +3,7 @@ from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.textinput import TextInput
 
 from modules.home import Home
+from modules.backtracking import BacktrackingError
 from modules.messages import (
     INVALID_PUZZLE_TEXT,
     UNSOLVABLE_PUZZLE_TEXT,
@@ -177,6 +178,40 @@ def test_on_solve_unsolvable_sets_status(home, example, monkeypatch):
     assert _visual_cell(home, 0, 3).text == "6"
 
 
+def test_on_solve_backtracking_error_sets_status(home, example, monkeypatch):
+    _fill_visual_board(home, example)
+
+    class FailingSolver:
+        def __init__(self, _board):
+            pass
+
+        def get_solution(self):
+            raise BacktrackingError("Backtracking algorithm failed to find a solution.")
+
+    monkeypatch.setattr("modules.home.SudokuBacktracking", FailingSolver)
+    home._on_solve()
+
+    assert home.status.text == UNSOLVABLE_PUZZLE_TEXT
+    assert _visual_cell(home, 0, 0).text == "4"
+
+
+def test_on_solve_unexpected_error_sets_status(home, example, monkeypatch):
+    _fill_visual_board(home, example)
+
+    class FailingSolver:
+        def __init__(self, _board):
+            pass
+
+        def get_solution(self):
+            raise RuntimeError("unexpected failure")
+
+    monkeypatch.setattr("modules.home.SudokuBacktracking", FailingSolver)
+    home._on_solve()
+
+    assert home.status.text == "An unexpected error occurred."
+    assert _visual_cell(home, 0, 0).text == "4"
+
+
 def test_keep_board_square_uses_smaller_dimension(home):
     container = AnchorLayout(size=(400, 200))
     home._keep_board_square(container)
@@ -201,7 +236,7 @@ def test_apply_board_clears_status(home):
     assert home.status.text == ""
 
 
-def test_scan_button_triggers_callback() -> None:
+def test_scan_button_triggers_callback():
     called = {"value": False}
     home = Home(on_camera=lambda: called.update(value=True))
     assert home._on_camera is not None

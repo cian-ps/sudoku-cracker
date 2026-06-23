@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from modules.backtracking import SudokuBacktracking
+from modules.backtracking import BacktrackingError, SudokuBacktracking
 from modules.backtracking import _RECURSION_LIMIT
 
 
@@ -35,3 +35,10 @@ def test_raises_recursion_error():
 def test_get_solution(example, example_solution):
     solver = SudokuBacktracking(example.copy())
     assert np.array_equal(solver.get_solution(), example_solution)
+
+
+def test_raises_backtracking_error_for_unsolvable_puzzle(unsolvable_puzzle):
+    solver = SudokuBacktracking(unsolvable_puzzle.copy())
+
+    with pytest.raises(BacktrackingError, match="failed to find a solution"):
+        solver.get_solution()
