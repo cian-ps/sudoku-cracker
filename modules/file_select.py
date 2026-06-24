@@ -14,7 +14,6 @@ from kivy.uix.button import Button
 from kivy.uix.image import Image
 from kivy.uix.label import Label
 from kivy.uix.modalview import ModalView
-from kivy.uix.progressbar import ProgressBar
 from plyer import filechooser
 
 from modules.image_parsing import (
@@ -24,6 +23,7 @@ from modules.image_parsing import (
     OCRMismatchError,
     extract_grid,
 )
+from modules.loading import show_scanning_modal
 from modules.messages import (
     FILE_LOAD_FAILED_TEXT,
     FILE_NONE_SELECTED_TEXT,
@@ -81,7 +81,11 @@ class FileSelect(BoxLayout):
             spacing=dp(10),
         )
         self._back_btn = Button(text="Back", font_size="20sp")
-        self._continue_btn = Button(text="Continue", font_size="20sp")
+        self._continue_btn = Button(
+            text="Continue",
+            font_size="20sp",
+            background_color=(0.2, 0.8, 1, 1),
+        )
         self._back_btn.bind(on_press=self._handle_back)
         self._continue_btn.bind(on_press=self._handle_continue)
 
@@ -158,34 +162,6 @@ class FileSelect(BoxLayout):
 
     def _handle_back(self, *_args: object) -> None:
         self._on_cancel()
-
-    def _show_scan_modal(self) -> ModalView:
-        content = BoxLayout(
-            orientation="vertical",
-            padding=dp(20),
-            spacing=dp(12),
-            size_hint_y=None,
-        )
-        content.bind(minimum_height=content.setter("height"))
-        content.add_widget(
-            Label(
-                text=SCANNING_TEXT,
-                font_size="18sp",
-                size_hint_y=None,
-                height=dp(28),
-                halign="center",
-            )
-        )
-        content.add_widget(ProgressBar(max=0, size_hint_y=None, height=dp(4)))
-
-        modal = ModalView(
-            size_hint=(0.8, None),
-            height=dp(120),
-            auto_dismiss=False,
-        )
-        modal.add_widget(content)
-        modal.open()
-        return modal
 
     def _dismiss_scan_modal(self) -> None:
         if self._scan_modal is not None:
@@ -268,7 +244,7 @@ class FileSelect(BoxLayout):
 
         frame = self._image.copy()
         self._set_scan_ui_active(True)
-        self._scan_modal = self._show_scan_modal()
+        self._scan_modal = show_scanning_modal(SCANNING_TEXT)
 
         thread = threading.Thread(target=self._run_scan, args=(frame,), daemon=True)
         thread.start()

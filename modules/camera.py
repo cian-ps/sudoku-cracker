@@ -14,7 +14,6 @@ from kivy.uix.button import Button
 from kivy.uix.image import Image
 from kivy.uix.label import Label
 from kivy.uix.modalview import ModalView
-from kivy.uix.progressbar import ProgressBar
 
 from modules.image_parsing import (
     extract_grid,
@@ -24,6 +23,7 @@ from modules.image_parsing import (
     OCREngineError,
     OCRMismatchError,
 )
+from modules.loading import show_scanning_modal
 from modules.messages import (
     CAMERA_FRAME_ERROR_TEXT,
     CAMERA_NO_FRAME_TEXT,
@@ -89,7 +89,11 @@ class Camera(BoxLayout):
             spacing=dp(10),
         )
         self._back_btn = Button(text="Back", font_size="20sp")
-        self._scan_btn = Button(text="Scan", font_size="20sp")
+        self._scan_btn = Button(
+            text="Scan",
+            font_size="20sp",
+            background_color=(0.2, 0.8, 1, 1),
+        )
         self._back_btn.bind(on_press=self._handle_back)
         self._scan_btn.bind(on_press=self._handle_scan)
 
@@ -153,34 +157,6 @@ class Camera(BoxLayout):
 
     def _handle_back(self, *_args: object) -> None:
         self._on_cancel()
-
-    def _show_scan_modal(self) -> ModalView:
-        content = BoxLayout(
-            orientation="vertical",
-            padding=dp(20),
-            spacing=dp(12),
-            size_hint_y=None,
-        )
-        content.bind(minimum_height=content.setter("height"))
-        content.add_widget(
-            Label(
-                text=SCANNING_TEXT,
-                font_size="18sp",
-                size_hint_y=None,
-                height=dp(28),
-                halign="center",
-            )
-        )
-        content.add_widget(ProgressBar(max=0, size_hint_y=None, height=dp(4)))
-
-        modal = ModalView(
-            size_hint=(0.8, None),
-            height=dp(120),
-            auto_dismiss=False,
-        )
-        modal.add_widget(content)
-        modal.open()
-        return modal
 
     def _dismiss_scan_modal(self) -> None:
         if self._scan_modal is not None:
@@ -261,7 +237,7 @@ class Camera(BoxLayout):
 
         frame = self._frame.copy()
         self._set_scan_ui_active(True)
-        self._scan_modal = self._show_scan_modal()
+        self._scan_modal = show_scanning_modal(SCANNING_TEXT)
 
         thread = threading.Thread(target=self._run_scan, args=(frame,), daemon=True)
         thread.start()

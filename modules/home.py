@@ -15,6 +15,7 @@ from kivy.uix.textinput import TextInput
 
 from modules.backtracking import SudokuBacktracking, BacktrackingError
 from modules.messages import INVALID_PUZZLE_TEXT, UNSOLVABLE_PUZZLE_TEXT
+from modules.navbar import BottomNavBar
 
 
 class Home(BoxLayout):
@@ -124,35 +125,27 @@ class Home(BoxLayout):
         solve_btn = Button(
             text="Solve", font_size="20sp", background_color=(0.2, 0.8, 1, 1)
         )
-
-        nav_btn_row = BoxLayout(
-            orientation="horizontal",
-            size_hint_y=None,
-            height=dp(50),
-            spacing=dp(10),
-        )
-        camera_btn = Button(text="Camera", font_size="20sp")
-        file_btn = Button(text="Select File", font_size="20sp")
-
         clear_btn.bind(on_press=self._on_clear)
         solve_btn.bind(on_press=self._on_solve)
-
-        if self._on_camera is not None:
-            camera_btn.bind(on_press=lambda *_: self._on_camera())
-        if self._on_file_select is not None:
-            file_btn.bind(on_press=lambda *_: self._on_file_select())
 
         button_row.add_widget(clear_btn)
         button_row.add_widget(solve_btn)
 
-        nav_btn_row.add_widget(camera_btn)
-        nav_btn_row.add_widget(file_btn)
+        nav_bar = BottomNavBar()
+        if self._on_camera is not None:
+            nav_bar.add_item(
+                "assets/camera-icon.png", "Camera", on_press=self._on_camera
+            )
+        if self._on_file_select is not None:
+            nav_bar.add_item(
+                "assets/image-icon.png", "File", on_press=self._on_file_select
+            )
 
         self.add_widget(title)
         self.add_widget(self.status)
         self.add_widget(grid_area)
         self.add_widget(button_row)
-        self.add_widget(nav_btn_row)
+        self.add_widget(nav_bar)
 
     @staticmethod
     def _cell_index(row: int, col: int) -> int:
