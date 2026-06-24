@@ -11,9 +11,8 @@ from modules.image_parsing import (
     ObjectDetectionError,
     OCREngineError,
     OCRMismatchError,
-    _get_paddle_ocr,
+    _OCREngine,
     _reorder,
-    clear_ocr_engine_cache,
     draw_contour,
     extract_grid,
 )
@@ -92,8 +91,8 @@ def test_inference_engine_parse_to_numpy_success(mock_ocr_engine: MagicMock) -> 
     mock_ocr_engine.predict.return_value = [{"rec_texts": ["5", "9"]}]
     grid = _grid_with_populated_cells([(0, 0), (0, 1)])
 
-    engine = InferenceEngine(grid)
-    result = engine.parse_to_numpy()
+    engine = InferenceEngine()
+    result = engine.run(grid)
 
     assert result.shape == (9, 9)
     assert result[0, 0] == 5
@@ -106,8 +105,8 @@ def test_inference_engine_filters_non_digit_predictions(
     mock_ocr_engine.predict.return_value = [{"rec_texts": ["5", "x"]}]
     grid = _grid_with_populated_cells([(0, 0), (0, 1)])
 
-    engine = InferenceEngine(grid)
-    result = engine.parse_to_numpy()
+    engine = InferenceEngine()
+    result = engine.run(grid)
 
     assert result[0, 0] == 5
     assert result[0, 1] == 0
@@ -119,30 +118,29 @@ def test_inference_engine_raises_on_prediction_mismatch(
     mock_ocr_engine.predict.return_value = [{"rec_texts": ["5"]}]
     grid = _grid_with_populated_cells([(0, 0), (0, 1)])
 
-    engine = InferenceEngine(grid)
+    engine = InferenceEngine()
 
     with pytest.raises(OCRMismatchError, match="OCR only predicted"):
-        engine.parse_to_numpy()
+        engine.run(grid)
 
 
 def test_inference_engine_parse_empty_grid(mock_ocr_engine: MagicMock) -> None:
     mock_ocr_engine.predict.return_value = [{"rec_texts": []}]
     grid = np.zeros((450, 450, 3), dtype=np.uint8)
 
-    engine = InferenceEngine(grid)
-    result = engine.parse_to_numpy()
+    engine = InferenceEngine()
+    result = engine.run(grid)
 
     assert result.shape == (9, 9)
     assert np.all(result == 0)
-    assert len(engine._cells) == 81
 
 
 @pytest.mark.no_mock_ocr
 def test_get_paddle_ocr_raises_engine_error() -> None:
-    clear_ocr_engine_cache()
+    _OCREngine.clear_cache()
     mock_paddleocr = MagicMock()
     mock_paddleocr.PaddleOCR.side_effect = RuntimeError("init failed")
 
     with patch.dict("sys.modules", {"paddleocr": mock_paddleocr}):
         with pytest.raises(OCREngineError, match="Failed to initialize OCR engine"):
-            _get_paddle_ocr()
+            _OCREngine._get_paddle_ocr()

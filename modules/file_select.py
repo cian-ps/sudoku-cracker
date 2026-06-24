@@ -200,8 +200,7 @@ class FileSelect(BoxLayout):
     def _run_scan(self, frame: np.ndarray) -> None:
         try:
             grid = extract_grid(frame)
-            ocr = InferenceEngine(grid)
-            preds_array = ocr.parse_to_numpy()
+            preds_array = InferenceEngine().run(grid)
         except ObjectDetectionError as e:
             logging.error(e)
             Clock.schedule_once(

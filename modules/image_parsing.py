@@ -1,13 +1,11 @@
 from __future__ import annotations
 
 import threading
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
 import cv2
 import numpy as np
-
-_ocr_instance: Any | None = None
-_ocr_lock = threading.Lock()
 
 
 class OCRMismatchError(Exception):
@@ -37,92 +35,75 @@ class OCREngineError(Exception):
         super().__init__(message)
 
 
-def _get_paddle_ocr() -> Any:
-    global _ocr_instance
-
-    if _ocr_instance is not None:
-        return _ocr_instance
-
-    with _ocr_lock:
-        if _ocr_instance is not None:
-            return _ocr_instance
-
-        try:
-            from paddleocr import PaddleOCR
-
-            _ocr_instance = PaddleOCR(lang="en")
-        except Exception as exc:
-            raise OCREngineError("Failed to initialize OCR engine.") from exc
-
-    return _ocr_instance
-
-
-def clear_ocr_engine_cache() -> None:
-    global _ocr_instance
-
-    with _ocr_lock:
-        _ocr_instance = None
-
-
 class _OCREngine:
+    _instance: Any | None = None
+    _lock = threading.Lock()
+    _executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="paddle_ocr")
+
+    @classmethod
+    def _get_paddle_ocr(cls) -> Any:
+        if cls._instance is not None:
+            return cls._instance
+
+        with cls._lock:
+            if cls._instance is not None:
+                return cls._instance
+
+            try:
+                from paddleocr import PaddleOCR
+
+                cls._instance = PaddleOCR(lang="en")
+            except Exception as exc:
+                raise OCREngineError("Failed to initialize OCR engine.") from exc
+
+        return cls._instance
+
+    @classmethod
+    def clear_cache(cls) -> None:
+        with cls._lock:
+            cls._instance = None
+
     def __init__(self) -> None:
-        self._ocr = _get_paddle_ocr()
+        self._ocr = self._get_paddle_ocr()
 
-    def predict(self, image: np.ndarray) -> list[Any]:
-        """
-        Returns PaddleOCR's predictions for the given image.
-
-        Args:
-            image(np.ndarray): The image to pass to PaddleOCR.
-        Returns:
-            list[Any]: The predictions as returned by PaddleOCR(lang='en').predict(image).
-        """
+    def _predict(self, image: np.ndarray) -> list[Any]:
         return self._ocr.predict(image)
 
 
 class InferenceEngine(_OCREngine):
     """
-    Image to ndarray Parser.
-
-    Args:
-        grid(np.ndarray): Clear image only showing the Sudoku grid.
-        std_thresh(int): Threshold for detecting populated cells by standard deviation.
-        padding(int): Cell padding to exclude grid lines when calculating standard deviation.
+    Sudoku puzzle image to array parser.
     """
 
-    def __init__(
-        self, grid: np.ndarray, std_thresh: int = 10, padding: int = 10
-    ) -> None:
+    def __init__(self) -> None:
         super().__init__()
-        self._grid = grid
-        self._cells = self.__split_grid()
-        self._preds = self.__predict_digits()
-        self._std_mask = self.__std_masking(std_thresh, padding)
 
-    def __split_grid(self) -> list[np.ndarray]:
+    def __split_grid(self, grid: np.ndarray) -> list[np.ndarray]:
         cells = []
 
-        cell_h = self._grid.shape[0] // 9
-        cell_w = self._grid.shape[1] // 9
+        cell_h = grid.shape[0] // 9
+        cell_w = grid.shape[1] // 9
 
         for i in range(9):
             for j in range(9):
                 y1, y2 = i * cell_h, (i + 1) * cell_h
                 x1, x2 = j * cell_w, (j + 1) * cell_w
-                cell = self._grid[y1:y2, x1:x2]
+                cell = grid[y1:y2, x1:x2]
                 cells.append(cell)
 
         return cells
 
-    def __predict_digits(self) -> list[int]:
+    def __predict_digits(self, grid: np.ndarray) -> list[int]:
         allowed_chars = {"1", "2", "3", "4", "5", "6", "7", "8", "9"}
-        results = self.predict(self._grid)
+        results = self._predict(grid)
         preds = results[0]["rec_texts"]
         return list(map(lambda x: int(x) if x in allowed_chars else 0, preds))
 
-    def __std_masking(self, std_thresh: int, padding: int) -> np.ndarray:
+    def __std_masking(
+        self, grid: np.ndarray, std_thresh: int, padding: int
+    ) -> np.ndarray:
         cells_list = []
-        for c in self._cells:
+        for c in self.__split_grid(grid):
             gray = cv2.cvtColor(c, cv2.COLOR_BGR2GRAY)
             cells_list.append(gray[padding:-padding, padding:-padding])
 
@@ -132,22 +113,46 @@ class InferenceEngine(_OCREngine):
 
         return std_mask
 
-    def parse_to_numpy(self) -> np.ndarray:
-        """
-        Returns:
-            np.ndarray: 9x9 numpy array from the OCR results.
-        Raises:
-            OCRMismatchError: If the number of predictions does not match the number of populated cells.
-        """
+    def __parse_to_numpy(
+        self, grid: np.ndarray, std_thresh: int, padding: int
+    ) -> np.ndarray:
         result = np.zeros((9, 9), dtype=np.uint8)
-        expected_len = int(np.sum(self._std_mask))
-        if len(self._preds) != expected_len:
+        preds = self.__predict_digits(grid)
+        std_mask = self.__std_masking(grid, std_thresh, padding)
+        expected_len = int(np.sum(std_mask))
+        if len(preds) != expected_len:
             raise OCRMismatchError(
-                f"OCR only predicted {len(self._preds)} of {expected_len} expected digits."
+                f"OCR only predicted {len(preds)} of {expected_len} expected digits."
             )
 
-        result[self._std_mask] = self._preds
+        result[std_mask] = preds
         return result
+
+    def run(
+        self, grid: np.ndarray, std_thresh: int = 10, padding: int = 10
+    ) -> np.ndarray:
+        """
+        Run OCR inference on a dedicated worker thread.
+
+        Args:
+            grid(np.ndarray): Clear image only showing a square Sudoku grid.
+            std_thresh(int): Threshold for detecting populated cells by standard deviation.
+                Defaults to 10.
+            padding(int): Cell padding to exclude grid lines when calculating standard deviation.
+                Defaults to 10.
+
+        Returns:
+            An ndarray, of shape (9, 9), of recognized digits mapped to their place in the sudoku puzzle.
+
+        Raises:
+            OCRMismatchError: If the number of predictions does not match the number of populated cells.
+            OCREngineError: If the OCR engine cannot be initialized.
+        """
+
+        def execute() -> np.ndarray:
+            return self.__parse_to_numpy(grid, std_thresh, padding)
+
+        return self._executor.submit(execute).result()
 
 
 def _threshold(image: np.ndarray) -> np.ndarray:

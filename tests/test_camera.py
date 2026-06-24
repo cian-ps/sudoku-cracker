@@ -138,7 +138,7 @@ def test_scan_ocr_unavailable_shows_user_message() -> None:
     with (
         patch("modules.camera.extract_grid", return_value=_dummy_frame()),
         patch(
-            "modules.camera.InferenceEngine",
+            "modules.camera.InferenceEngine.run",
             side_effect=OCREngineError("Failed to initialize OCR engine."),
         ),
     ):
@@ -159,9 +159,8 @@ def test_scan_success_calls_on_capture() -> None:
 
     with (
         patch("modules.camera.extract_grid", return_value=_dummy_frame()),
-        patch("modules.camera.InferenceEngine") as mock_engine,
+        patch("modules.camera.InferenceEngine.run", return_value=expected),
     ):
-        mock_engine.return_value.parse_to_numpy.return_value = expected
         _run_scan_synchronously(camera)
 
     captured_value = captured["value"]

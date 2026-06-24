@@ -154,7 +154,7 @@ def test_scan_ocr_unavailable_shows_user_message() -> None:
     with (
         patch("modules.file_select.extract_grid", return_value=_dummy_frame()),
         patch(
-            "modules.file_select.InferenceEngine",
+            "modules.file_select.InferenceEngine.run",
             side_effect=OCREngineError("Failed to initialize OCR engine."),
         ),
     ):
@@ -174,9 +174,8 @@ def test_scan_success_calls_on_capture() -> None:
 
     with (
         patch("modules.file_select.extract_grid", return_value=_dummy_frame()),
-        patch("modules.file_select.InferenceEngine") as mock_engine,
+        patch("modules.file_select.InferenceEngine.run", return_value=expected),
     ):
-        mock_engine.return_value.parse_to_numpy.return_value = expected
         _run_continue_synchronously(file_select)
 
     captured_value = captured["value"]
