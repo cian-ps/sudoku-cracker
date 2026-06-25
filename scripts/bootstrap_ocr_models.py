@@ -13,7 +13,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 import rapidocr  # noqa: E402
 
-from modules.ocr.model_assets import MANIFEST_PATH, OCR_MODEL_DIR  # noqa: E402
+from modules.ocr.model_assets import ocr_manifest_path, ocr_model_dir  # noqa: E402
 from modules.ocr.rapidocr_backend import RapidOCRBackend  # noqa: E402
 
 EXPECTED_MODELS = {
@@ -31,7 +31,9 @@ def _sha256(path: Path) -> str:
 
 
 def main() -> None:
-    OCR_MODEL_DIR.mkdir(parents=True, exist_ok=True)
+    model_dir = ocr_model_dir()
+    manifest_path = ocr_manifest_path()
+    model_dir.mkdir(parents=True, exist_ok=True)
 
     RapidOCRBackend()
 
@@ -45,19 +47,19 @@ def main() -> None:
                 f"Expected RapidOCR model not found after warmup: {source_path}"
             )
 
-        target_path = OCR_MODEL_DIR / filename
+        target_path = model_dir / filename
         shutil.copy2(source_path, target_path)
         manifest[role] = {
             "filename": filename,
             "sha256": _sha256(target_path),
         }
 
-    with MANIFEST_PATH.open("w", encoding="utf-8") as manifest_file:
+    with manifest_path.open("w", encoding="utf-8") as manifest_file:
         json.dump(manifest, manifest_file, indent=2)
         manifest_file.write("\n")
 
-    print(f"Cached OCR models in {OCR_MODEL_DIR}")
-    print(f"Wrote manifest to {MANIFEST_PATH}")
+    print(f"Cached OCR models in {model_dir}")
+    print(f"Wrote manifest to {manifest_path}")
 
 
 if __name__ == "__main__":

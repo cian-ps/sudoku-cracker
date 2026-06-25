@@ -18,16 +18,16 @@ package.domain = org.test
 source.dir = .
 
 # (list) Source files to include (leave empty to include all the files)
-source.include_exts = py,png
+source.include_exts = py,png,yaml,json,onnx
 
 # (list) List of inclusions using pattern matching
-#source.include_patterns = assets/*,images/*.png
+source.include_patterns = assets/models/ocr_config.yaml,assets/models/ocr_models.json,assets/models/ocr/*.onnx
 
 # (list) Source files to exclude (leave empty to not exclude anything)
 #source.exclude_exts = spec
 
 # (list) List of directory to exclude (leave empty to not exclude anything)
-source.exclude_dirs = tests
+source.exclude_dirs = tests,p4a_local_recipes
 
 # (list) List of exclusions using pattern matching
 # Do not prefix with './'
@@ -42,7 +42,7 @@ version = 1.0.0-beta.1
 
 # (list) Application requirements
 # comma separated e.g. requirements = sqlite3,kivy
-requirements = python3,kivy,numpy
+requirements = python3,kivy,numpy,opencv,pillow,pyyaml,pyclipper,shapely,rapidocr,onnxruntime,colorlog,omegaconf,requests,six,tqdm,android,pyjnius,plyer
 
 # (str) Custom source folders for requirements
 # Sets custom source for any requirements with recipes
@@ -103,7 +103,7 @@ fullscreen = 0
 
 # (list) Permissions
 # (See https://python-for-android.readthedocs.io/en/latest/buildoptions.html for all the supported syntaxes and properties)
-#android.permissions = android.permission.INTERNET, (name=android.permission.WRITE_EXTERNAL_STORAGE;maxSdkVersion=18)
+android.permissions = android.permission.READ_MEDIA_IMAGES, (name=android.permission.READ_EXTERNAL_STORAGE;maxSdkVersion=32)
 
 # (list) features (adds uses-feature -tags to manifest)
 #android.features = android.hardware.usb.host
@@ -118,7 +118,7 @@ android.minapi = 24
 #android.sdk = 20
 
 # (str) Android NDK version to use
-#android.ndk = 23b
+android.ndk = 25b
 
 # (int) Android NDK API to use. This is the minimum API your app will support, it should usually match android.minapi.
 android.ndk_api = 24
@@ -283,7 +283,7 @@ android.accept_sdk_license = True
 #android.uses_library =
 
 # (str) Android logcat filters to use
-#android.logcat_filters = *:S python:D
+android.logcat_filters = python:I python:D *:S
 
 # (bool) Android logcat only display log for activity's pid
 #android.logcat_pid_only = False
@@ -350,7 +350,7 @@ android.allow_backup = True
 #p4a.source_dir =
 
 # (str) The directory in which python-for-android should look for your own build recipes (if any)
-#p4a.local_recipes =
+p4a.local_recipes = ./p4a_local_recipes
 
 # (str) Filename to the hook for p4a
 #p4a.hook =

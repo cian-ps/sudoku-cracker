@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -9,17 +8,18 @@ from rapidocr import RapidOCR
 from rapidocr.utils.typings import LangDet, LangRec, ModelType, OCRVersion
 
 from modules.ocr.errors import OCREngineError
-from modules.ocr.model_assets import resolve_local_model_paths
-
-_CONFIG_PATH = (
-    Path(__file__).resolve().parents[2] / "assets" / "models" / "ocr_config.yaml"
+from modules.ocr.model_assets import (
+    is_android,
+    ocr_config_path,
+    resolve_local_model_paths,
 )
 
 
 def _load_config() -> dict[str, Any]:
-    if not _CONFIG_PATH.is_file():
+    config_path = ocr_config_path()
+    if not config_path.is_file():
         return {}
-    with _CONFIG_PATH.open(encoding="utf-8") as config_file:
+    with config_path.open(encoding="utf-8") as config_file:
         return yaml.safe_load(config_file) or {}
 
 
@@ -45,8 +45,20 @@ def _build_rapidocr_params(config: dict[str, Any]) -> dict[str, Any]:
     return params
 
 
+def _require_bundled_models_on_android() -> None:
+    if not is_android():
+        return
+    if resolve_local_model_paths() is not None:
+        return
+    raise OCREngineError(
+        "Bundled OCR models not found on Android. "
+        "Run `uv run python scripts/bootstrap_ocr_models.py` before building the APK."
+    )
+
+
 class RapidOCRBackend:
     def __init__(self) -> None:
+        _require_bundled_models_on_android()
         config = _load_config()
         config_path = config.get("config_path")
         params = _build_rapidocr_params(config)

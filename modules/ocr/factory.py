@@ -12,9 +12,20 @@ OCRBackendName = Literal["paddle", "rapidocr"]
 _DEFAULT_BACKEND: OCRBackendName = "rapidocr"
 
 
+def _default_backend_name() -> OCRBackendName:
+    try:
+        from kivy.utils import platform as kivy_platform
+
+        if kivy_platform == "android":
+            return "rapidocr"
+    except (ImportError, ModuleNotFoundError):
+        pass
+    return _DEFAULT_BACKEND
+
+
 def _normalize_backend_name(value: str | None) -> OCRBackendName:
     if value is None:
-        return _DEFAULT_BACKEND
+        return _default_backend_name()
 
     normalized = value.strip().lower()
     if normalized in {"paddle", "rapidocr"}:
