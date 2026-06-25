@@ -7,6 +7,9 @@ from typing import Any
 import cv2
 import numpy as np
 
+from modules.ocr.errors import OCREngineError
+from modules.ocr.factory import create_ocr_engine
+
 
 class OCRMismatchError(Exception):
     """
@@ -26,15 +29,6 @@ class ObjectDetectionError(Exception):
         super().__init__(message)
 
 
-class OCREngineError(Exception):
-    """
-    Exception raised when the OCR engine cannot be initialized.
-    """
-
-    def __init__(self, message: str) -> None:
-        super().__init__(message)
-
-
 class _OCREngine:
     _instance: Any | None = None
     _lock = threading.Lock()
@@ -42,26 +36,26 @@ class _OCREngine:
 
     @classmethod
     def _get_paddle_ocr(cls) -> Any:
-        if cls._instance is not None:
-            return cls._instance
+        if _OCREngine._instance is not None:
+            return _OCREngine._instance
 
         with cls._lock:
-            if cls._instance is not None:
-                return cls._instance
+            if _OCREngine._instance is not None:
+                return _OCREngine._instance
 
             try:
-                from paddleocr import PaddleOCR
-
-                cls._instance = PaddleOCR(lang="en")
+                _OCREngine._instance = create_ocr_engine()
+            except OCREngineError:
+                raise
             except Exception as exc:
                 raise OCREngineError("Failed to initialize OCR engine.") from exc
 
-        return cls._instance
+        return _OCREngine._instance
 
     @classmethod
     def clear_cache(cls) -> None:
         with cls._lock:
-            cls._instance = None
+            _OCREngine._instance = None
 
     def __init__(self) -> None:
         self._ocr = self._get_paddle_ocr()

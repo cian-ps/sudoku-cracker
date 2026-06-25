@@ -8,14 +8,20 @@ dependencies = [
     "kivy>=2.3.1",
     "numpy==2.4.6",
     "onnx>=1.22.0",
+    "onnxruntime>=1.17.0",
     "opencv-python>=4.13.0.92",
     "paddleocr==3.3.3",
     "paddlepaddle==3.2.0",
     "pip>=26.1.2",
     "plyer>=2.1.0",
+    "rapidocr>=3.9.0",
 ]
 
 [project.optional-dependencies]
+paddleocr = [
+    "paddleocr==3.3.3",
+    "paddlepaddle==3.2.0",
+]
 dev = [
     "mypy>=2.1.0",
     "pre-commit>=4.6.0",
@@ -34,6 +40,7 @@ ignore_missing_imports = true
 [tool.pytest.ini_options]
 markers = [
     "no_mock_ocr: disable the autouse OCR engine mock for a test",
+    "integration: requires real OCR models and runs full inference",
 ]
 
 [tool.ruff]

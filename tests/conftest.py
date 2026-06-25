@@ -27,9 +27,7 @@ def mock_ocr_engine(request: pytest.FixtureRequest) -> Iterator[MagicMock | None
 
     mock_ocr = MagicMock()
     mock_ocr.predict.return_value = [{"rec_texts": []}]
-    with patch(
-        "modules.image_parsing._OCREngine._get_paddle_ocr", return_value=mock_ocr
-    ):
+    with patch("modules.image_parsing.create_ocr_engine", return_value=mock_ocr):
         yield mock_ocr
     _OCREngine.clear_cache()
 
