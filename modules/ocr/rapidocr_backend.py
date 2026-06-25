@@ -9,6 +9,7 @@ from rapidocr import RapidOCR
 from rapidocr.utils.typings import LangDet, LangRec, ModelType, OCRVersion
 
 from modules.ocr.errors import OCREngineError
+from modules.ocr.model_assets import resolve_local_model_paths
 
 _CONFIG_PATH = (
     Path(__file__).resolve().parents[2] / "assets" / "models" / "ocr_config.yaml"
@@ -27,7 +28,7 @@ def _build_rapidocr_params(config: dict[str, Any]) -> dict[str, Any]:
     rec = config.get("rec", {})
     global_cfg = config.get("global", {})
 
-    return {
+    params: dict[str, Any] = {
         "Global.use_cls": global_cfg.get("use_cls", False),
         "Global.log_level": global_cfg.get("log_level", "error"),
         "Det.lang_type": LangDet[det.get("lang_type", "CH").upper()],
@@ -40,6 +41,8 @@ def _build_rapidocr_params(config: dict[str, Any]) -> dict[str, Any]:
         "Det.unclip_ratio": det.get("unclip_ratio", 1.6),
         "Det.thresh": det.get("thresh", 0.3),
     }
+    params.update(resolve_local_model_paths() or {})
+    return params
 
 
 class RapidOCRBackend:

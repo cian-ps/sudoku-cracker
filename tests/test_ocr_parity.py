@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import importlib.util
+
 import cv2
 import numpy as np
 import pytest
@@ -16,6 +18,15 @@ from modules.ocr.rapidocr_backend import RapidOCRBackend
 PARITY_IMAGE_PATHS = [
     Path("data/sudoku_puzzles_book_33.jpg"),
 ]
+
+
+def _paddle_available() -> bool:
+    return importlib.util.find_spec("paddleocr") is not None
+
+
+def _require_paddle() -> None:
+    if not _paddle_available():
+        pytest.skip("paddleocr optional extra is not installed")
 
 
 def _extract_rec_texts(
@@ -37,6 +48,7 @@ def _run_board(
 @pytest.mark.no_mock_ocr
 @pytest.mark.parametrize("image_path", PARITY_IMAGE_PATHS, ids=lambda path: path.name)
 def test_rapidocr_rec_texts_match_paddle(image_path: Path) -> None:
+    _require_paddle()
     frame = cv2.imread(str(image_path))
     assert frame is not None
 
@@ -54,6 +66,7 @@ def test_rapidocr_rec_texts_match_paddle(image_path: Path) -> None:
 @pytest.mark.no_mock_ocr
 @pytest.mark.parametrize("image_path", PARITY_IMAGE_PATHS, ids=lambda path: path.name)
 def test_rapidocr_board_matches_paddle(image_path: Path) -> None:
+    _require_paddle()
     frame = cv2.imread(str(image_path))
     assert frame is not None
 
@@ -69,9 +82,15 @@ def test_rapidocr_board_matches_paddle(image_path: Path) -> None:
 
 @pytest.mark.integration
 @pytest.mark.no_mock_ocr
-def test_factory_can_build_both_backends() -> None:
-    paddle = create_ocr_engine(backend="paddle")
+def test_factory_can_build_rapidocr_backend() -> None:
     rapid = create_ocr_engine(backend="rapidocr")
-
-    assert isinstance(paddle, PaddleBackend)
     assert isinstance(rapid, RapidOCRBackend)
+
+
+@pytest.mark.integration
+@pytest.mark.no_mock_ocr
+def test_factory_can_build_paddle_backend() -> None:
+    _require_paddle()
+
+    paddle = create_ocr_engine(backend="paddle")
+    assert isinstance(paddle, PaddleBackend)

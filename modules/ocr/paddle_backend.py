@@ -11,7 +11,12 @@ class PaddleBackend:
     def __init__(self) -> None:
         try:
             from paddleocr import PaddleOCR
+        except ImportError as exc:
+            raise OCREngineError(
+                "PaddleOCR is not installed. Install with: uv sync --extra paddleocr"
+            ) from exc
 
+        try:
             self._ocr = PaddleOCR(lang="en")
         except Exception as exc:
             raise OCREngineError("Failed to initialize OCR engine.") from exc

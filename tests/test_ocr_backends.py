@@ -12,23 +12,23 @@ from modules.ocr.paddle_backend import PaddleBackend
 from modules.ocr.rapidocr_backend import RapidOCRBackend
 
 
-def test_create_ocr_engine_defaults_to_paddle() -> None:
+def test_create_ocr_engine_defaults_to_rapidocr() -> None:
     with patch.dict(os.environ, {}, clear=False):
         os.environ.pop("OCR_BACKEND", None)
-        with patch("modules.ocr.factory.PaddleBackend") as mock_paddle:
-            mock_paddle.return_value = MagicMock()
-            engine = create_ocr_engine()
-            mock_paddle.assert_called_once()
-            assert engine is mock_paddle.return_value
-
-
-def test_create_ocr_engine_honors_rapidocr_env() -> None:
-    with patch.dict(os.environ, {"OCR_BACKEND": "rapidocr"}, clear=False):
         with patch("modules.ocr.factory.RapidOCRBackend") as mock_rapid:
             mock_rapid.return_value = MagicMock()
             engine = create_ocr_engine()
             mock_rapid.assert_called_once()
             assert engine is mock_rapid.return_value
+
+
+def test_create_ocr_engine_honors_paddle_env() -> None:
+    with patch.dict(os.environ, {"OCR_BACKEND": "paddle"}, clear=False):
+        with patch("modules.ocr.factory.PaddleBackend") as mock_paddle:
+            mock_paddle.return_value = MagicMock()
+            engine = create_ocr_engine()
+            mock_paddle.assert_called_once()
+            assert engine is mock_paddle.return_value
 
 
 def test_create_ocr_engine_rejects_unknown_backend() -> None:

@@ -9,7 +9,7 @@ from modules.ocr.protocol import OCRBackend
 from modules.ocr.rapidocr_backend import RapidOCRBackend
 
 OCRBackendName = Literal["paddle", "rapidocr"]
-_DEFAULT_BACKEND: OCRBackendName = "paddle"
+_DEFAULT_BACKEND: OCRBackendName = "rapidocr"
 
 
 def _normalize_backend_name(value: str | None) -> OCRBackendName:

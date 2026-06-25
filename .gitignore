@@ -9,6 +9,9 @@ wheels/
 # Virtual environments
 .venv
 
+# RapidOCR ONNX models cached locally by scripts/bootstrap_ocr_models.py
+assets/models/ocr/*.onnx
+
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
