@@ -33,6 +33,10 @@ dev = [
 
 [tool.mypy]
 ignore_missing_imports = true
+exclude = [
+    "tests/",
+    "p4a_local_recipes/",
+]
 
 [tool.pytest.ini_options]
 markers = [

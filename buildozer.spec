@@ -42,7 +42,7 @@ version = 1.0.0-beta.1
 
 # (list) Application requirements
 # comma separated e.g. requirements = sqlite3,kivy
-requirements = python3,kivy,numpy,opencv,pillow,pyyaml,pyclipper,shapely,rapidocr,onnxruntime,colorlog,omegaconf,requests,six,tqdm,android,pyjnius,plyer
+requirements = python3,kivy,numpy,opencv,pillow,pyyaml,pyclipper,shapely,rapidocr,onnxruntime,colorlog,omegaconf,antlr4-python3-runtime==4.9.3,requests,six,tqdm,android,pyjnius,plyer
 
 # (str) Custom source folders for requirements
 # Sets custom source for any requirements with recipes
@@ -118,7 +118,7 @@ android.minapi = 24
 #android.sdk = 20
 
 # (str) Android NDK version to use
-android.ndk = 25b
+android.ndk = 28c
 
 # (int) Android NDK API to use. This is the minimum API your app will support, it should usually match android.minapi.
 android.ndk_api = 24
@@ -341,7 +341,7 @@ android.allow_backup = True
 #p4a.fork = kivy
 
 # (str) python-for-android branch to use, defaults to master
-#p4a.branch = master
+p4a.branch = develop
 
 # (str) python-for-android specific commit to use, defaults to HEAD, must be within p4a.branch
 #p4a.commit = HEAD
@@ -353,7 +353,7 @@ android.allow_backup = True
 p4a.local_recipes = ./p4a_local_recipes
 
 # (str) Filename to the hook for p4a
-#p4a.hook =
+p4a.hook = p4a_hook.py
 
 # (str) Bootstrap to use for android builds
 # Run "buildozer android p4a -- bootstraps" for a list of valid values.

@@ -7,13 +7,26 @@ from typing import Any
 
 
 def is_android() -> bool:
-    return bool(os.environ.get("ANDROID_PRIVATE"))
+    return bool(
+        os.environ.get("ANDROID_APP_PATH")
+        or os.environ.get("ANDROID_PRIVATE")
+        or os.environ.get("PYTHONHOME")
+    )
 
 
 def app_root() -> Path:
+    for key in ("ANDROID_APP_PATH", "ANDROID_UNPACK", "PYTHONHOME"):
+        value = os.environ.get(key)
+        if value:
+            return Path(value)
+
     private = os.environ.get("ANDROID_PRIVATE")
     if private:
+        app_dir = Path(private) / "app"
+        if app_dir.is_dir():
+            return app_dir
         return Path(private)
+
     return Path(__file__).resolve().parents[2]
 
 

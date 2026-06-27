@@ -76,6 +76,21 @@ def test_on_enter_empty_selection_shows_message() -> None:
     assert file_select._continue_btn.disabled is True
 
 
+def test_on_enter_uses_android_picker_on_android() -> None:
+    file_select = FileSelect(on_capture=lambda _: None, on_cancel=lambda: None)
+    with (
+        patch("modules.file_select.is_android", return_value=True),
+        patch("modules.android_image_picker.open_image_file") as mock_open,
+        patch(
+            "modules.file_select.Clock.schedule_once",
+            side_effect=lambda callback, _delay: callback(0),
+        ),
+    ):
+        file_select.on_enter()
+
+    mock_open.assert_called_once()
+
+
 def test_on_enter_loads_selected_image() -> None:
     file_select = FileSelect(on_capture=lambda _: None, on_cancel=lambda: None)
     frame = _dummy_frame()
@@ -84,7 +99,7 @@ def test_on_enter_loads_selected_image() -> None:
             "modules.file_select.filechooser.open_file",
             side_effect=_mock_filechooser(["/tmp/puzzle.png"]),
         ),
-        patch("modules.file_select.cv2.imread", return_value=frame),
+        patch("modules.file_select.load_bgr_image", return_value=frame),
         patch(
             "modules.file_select.Clock.schedule_once",
             side_effect=lambda callback, _delay: callback(0),
@@ -105,7 +120,7 @@ def test_on_enter_load_failure_shows_message() -> None:
             "modules.file_select.filechooser.open_file",
             side_effect=_mock_filechooser(["/tmp/bad.png"]),
         ),
-        patch("modules.file_select.cv2.imread", return_value=None),
+        patch("modules.file_select.load_bgr_image", return_value=None),
         patch(
             "modules.file_select.Clock.schedule_once",
             side_effect=lambda callback, _delay: callback(0),

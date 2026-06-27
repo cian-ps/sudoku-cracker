@@ -16,6 +16,7 @@ from kivy.uix.label import Label
 from kivy.uix.modalview import ModalView
 from plyer import filechooser
 
+from modules.image_io import load_bgr_image
 from modules.image_parsing import (
     InferenceEngine,
     ObjectDetectionError,
@@ -24,6 +25,7 @@ from modules.image_parsing import (
     extract_grid,
 )
 from modules.loading import show_scanning_modal
+from modules.ocr.model_assets import is_android
 from modules.messages import (
     FILE_LOAD_FAILED_TEXT,
     FILE_NONE_SELECTED_TEXT,
@@ -105,10 +107,15 @@ class FileSelect(BoxLayout):
         self._scan_modal = None
         self._continue_btn.disabled = True
         self._clear_preview()
-        filechooser.open_file(
-            on_selection=self._on_file_chosen,
-            filters=_IMAGE_FILTER,
-        )
+        if is_android():
+            from modules.android_image_picker import open_image_file
+
+            open_image_file(on_selection=self._on_file_chosen)
+        else:
+            filechooser.open_file(
+                on_selection=self._on_file_chosen,
+                filters=_IMAGE_FILTER,
+            )
 
     def on_leave(self) -> None:
         self._scan_cancelled = True
@@ -135,9 +142,9 @@ class FileSelect(BoxLayout):
             return
 
         path = paths[0]
-        image = cv2.imread(path)
+        image = load_bgr_image(path)
         if image is None:
-            logging.error("cv2.imread failed for %s", path)
+            logging.error("Failed to load image from %s", path)
             self._status.text = FILE_LOAD_FAILED_TEXT
             self._image = None
             self._file_path = None
@@ -155,9 +162,17 @@ class FileSelect(BoxLayout):
         self._preview.texture = None
 
     def _update_preview(self, image: np.ndarray) -> None:
-        buffer = cv2.flip(image, 0).tobytes()
-        texture = Texture.create(size=(image.shape[1], image.shape[0]), colorfmt="bgr")
-        texture.blit_buffer(buffer, colorfmt="bgr", bufferfmt="ubyte")
+        if is_android():
+            display = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            colorfmt = "rgb"
+        else:
+            display = image
+            colorfmt = "bgr"
+        buffer = cv2.flip(display, 0).tobytes()
+        texture = Texture.create(
+            size=(image.shape[1], image.shape[0]), colorfmt=colorfmt
+        )
+        texture.blit_buffer(buffer, colorfmt=colorfmt, bufferfmt="ubyte")
         self._preview.texture = texture
 
     def _handle_back(self, *_args: object) -> None:

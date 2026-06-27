@@ -5,6 +5,8 @@ import sh
 from pythonforandroid.recipe import PyProjectRecipe
 from pythonforandroid.toolchain import current_directory, shprint
 
+PAGE_SIZE_LDFLAGS = "-Wl,-z,max-page-size=16384 -Wl,-z,common-page-size=16384"
+
 
 class OnnxRuntimeRecipe(PyProjectRecipe):
     version = "1.22.1"
@@ -13,17 +15,17 @@ class OnnxRuntimeRecipe(PyProjectRecipe):
     depends = ["setuptools", "wheel", "numpy", "protobuf", "pybind11"]
     patches = [
         "patches/onnx_numpy.patch",
-        "patches/mlasi_bfloat.patch",
     ]
     build_in_src = True
 
-    def get_recipe_env(self, arch=None):
-        env = super().get_recipe_env(arch)
+    def get_recipe_env(self, arch=None, **kwargs):
+        env = super().get_recipe_env(arch, **kwargs)
         python_include_dir = self.ctx.python_recipe.include_root(arch.arch)
         env["CPPFLAGS"] += f" -Wno-unused-variable -I{python_include_dir}"
         env["CXXFLAGS"] += f" -I{python_include_dir}"
         env["CFLAGS"] += f" -I{python_include_dir}"
         env["Python_INCLUDE_DIRS"] = python_include_dir
+        env["LDFLAGS"] += f" {PAGE_SIZE_LDFLAGS}"
         return env
 
     def build_arch(self, arch):
@@ -47,7 +49,7 @@ class OnnxRuntimeRecipe(PyProjectRecipe):
         python_include_numpy = join(
             python_site_packages,
             "numpy",
-            "core",
+            "_core",
             "include",
         )
         toolchain_file = join(
@@ -79,6 +81,10 @@ class OnnxRuntimeRecipe(PyProjectRecipe):
             f"-DPython_LIBRARY={python_library}",
             f"-DPython_LIBRARIES={python_library}",
             "-DCMAKE_BUILD_TYPE=RELEASE",
+            "-DCMAKE_POLICY_VERSION_MINIMUM=3.5",
+            "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON",
+            f"-DCMAKE_SHARED_LINKER_FLAGS={PAGE_SIZE_LDFLAGS}",
+            f"-DCMAKE_EXE_LINKER_FLAGS={PAGE_SIZE_LDFLAGS}",
             "-Donnxruntime_BUILD_UNIT_TESTS=OFF",
         ]
 
