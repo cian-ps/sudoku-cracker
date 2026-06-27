@@ -3,11 +3,12 @@ from __future__ import annotations
 import logging
 import threading
 from collections.abc import Callable
+from typing import Any
 
 import cv2
 import numpy as np
 from kivy.clock import Clock
-from kivy.graphics.texture import Texture
+from kivy.core.camera import Camera as CoreCamera
 from kivy.metrics import dp
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
@@ -15,6 +16,12 @@ from kivy.uix.image import Image
 from kivy.uix.label import Label
 from kivy.uix.modalview import ModalView
 
+from modules.camera_frames import (
+    bgr_to_preview_texture,
+    get_android_camera_rotation,
+    nv21_bytes_to_bgr,
+    rotate_bgr,
+)
 from modules.image_parsing import (
     extract_grid,
     draw_contour,
@@ -34,6 +41,7 @@ from modules.messages import (
     SCAN_FAILED_TEXT,
     SCANNING_TEXT,
 )
+from modules.ocr.model_assets import is_android
 
 _CAMERA_TRANSIENT_STATUS_TEXTS = frozenset(
     {
@@ -52,6 +60,26 @@ _CAMERA_SCAN_ERROR_TEXTS = frozenset(
 )
 
 _FRAME_INTERVAL = 1.0 / 30.0
+_ANDROID_CAMERA_RESOLUTION = (640, 480)
+
+
+def _has_camera_permission() -> bool:
+    try:
+        from android.permissions import Permission, check_permission
+    except ImportError:
+        return True
+    return bool(check_permission(Permission.CAMERA))
+
+
+def _request_camera_permission(
+    callback: Callable[[list[str], list[bool]], None],
+) -> None:
+    try:
+        from android.permissions import Permission, request_permissions
+    except ImportError:
+        callback([], [True])
+        return
+    request_permissions([Permission.CAMERA], callback)
 
 
 class Camera(BoxLayout):
@@ -68,12 +96,14 @@ class Camera(BoxLayout):
         self._on_cancel = on_cancel
         self._frame: np.ndarray | None = None
         self._vidcap: cv2.VideoCapture | None = None
+        self._android_camera: Any | None = None
+        self._android_rotation = 90
         self._update_event = None
         self._scanning = False
         self._scan_cancelled = False
         self._scan_modal: ModalView | None = None
 
-        self._preview = Image(size_hint=(1, 1))
+        self._preview = Image(size_hint=(1, 1), fit_mode="cover")
         self._status = Label(
             text="",
             font_size="20sp",
@@ -110,9 +140,59 @@ class Camera(BoxLayout):
         self._scanning = False
         self._scan_cancelled = False
         self._scan_modal = None
+
+        if is_android():
+            self._start_android_camera()
+            return
+
         self._vidcap = cv2.VideoCapture(0)
         if not self._vidcap.isOpened():
             logging.error("VideoCapture(0) failed to open camera")
+            self._status.text = CAMERA_UNAVAILABLE_TEXT
+            self._scan_btn.disabled = True
+            return
+
+        self._scan_btn.disabled = False
+        self._update_event = Clock.schedule_interval(self._update, _FRAME_INTERVAL)
+
+    def _start_android_camera(self) -> None:
+        if _has_camera_permission():
+            self._open_android_core_camera()
+            return
+
+        def on_permission_result(
+            _permissions: list[str], grant_results: list[bool]
+        ) -> None:
+            Clock.schedule_once(
+                lambda _dt: self._on_camera_permission_result(grant_results),
+                0,
+            )
+
+        _request_camera_permission(on_permission_result)
+
+    def _on_camera_permission_result(self, grant_results: list[bool]) -> None:
+        if self._scan_cancelled or self._android_camera is not None:
+            return
+        if grant_results and all(grant_results):
+            self._open_android_core_camera()
+            return
+
+        logging.error("Camera permission denied")
+        self._status.text = CAMERA_UNAVAILABLE_TEXT
+        self._scan_btn.disabled = True
+
+    def _open_android_core_camera(self) -> None:
+        try:
+            self._android_camera = CoreCamera(
+                index=0,
+                resolution=_ANDROID_CAMERA_RESOLUTION,
+                stopped=True,
+            )
+            self._android_camera.start()
+            self._android_rotation = get_android_camera_rotation(0)
+        except Exception:
+            logging.exception("CoreCamera failed to start")
+            self._android_camera = None
             self._status.text = CAMERA_UNAVAILABLE_TEXT
             self._scan_btn.disabled = True
             return
@@ -130,10 +210,22 @@ class Camera(BoxLayout):
         if self._vidcap is not None:
             self._vidcap.release()
             self._vidcap = None
+        if self._android_camera is not None:
+            self._android_camera.stop()
+            self._android_camera = None
         self._frame = None
 
     def _update(self, *_args: object) -> None:
-        if self._vidcap is None or self._scanning:
+        if self._scanning:
+            return
+
+        if is_android():
+            self._update_android()
+        else:
+            self._update_desktop()
+
+    def _update_desktop(self) -> None:
+        if self._vidcap is None:
             return
 
         ret, frame = self._vidcap.read()
@@ -144,16 +236,29 @@ class Camera(BoxLayout):
             self._scan_btn.disabled = True
             return
 
+        self._apply_frame(frame, android=False)
+
+    def _update_android(self) -> None:
+        if self._android_camera is None:
+            return
+
+        buffer = self._android_camera.grab_frame()
+        if buffer is None:
+            return
+
+        width, height = self._android_camera.resolution
+        frame = nv21_bytes_to_bgr(buffer, width, height)
+        frame = rotate_bgr(frame, self._android_rotation)
+        self._apply_frame(frame, android=True)
+
+    def _apply_frame(self, frame: np.ndarray, *, android: bool) -> None:
         self._frame = frame.copy()
         if self._status.text in _CAMERA_TRANSIENT_STATUS_TEXTS:
             self._status.text = ""
         self._scan_btn.disabled = False
 
         draw_contour(frame)
-        buffer = cv2.flip(frame, 0).tobytes()
-        texture = Texture.create(size=(frame.shape[1], frame.shape[0]), colorfmt="bgr")
-        texture.blit_buffer(buffer, colorfmt="bgr", bufferfmt="ubyte")
-        self._preview.texture = texture
+        self._preview.texture = bgr_to_preview_texture(frame, android=android)
 
     def _handle_back(self, *_args: object) -> None:
         self._on_cancel()

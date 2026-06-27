@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -302,3 +303,116 @@ def test_finish_scan_error_ignored_when_cancelled() -> None:
     camera._finish_scan_error(SCAN_FAILED_TEXT)
 
     assert camera._status.text == ""
+
+
+class _FakeAndroidCamera:
+    def __init__(self, *, frame: np.ndarray | None = None) -> None:
+        self._frame = frame
+        self.resolution = (640, 480)
+        self.started = False
+        self.stopped = False
+
+    def start(self) -> None:
+        self.started = True
+
+    def stop(self) -> None:
+        self.stopped = True
+
+    def grab_frame(self) -> bytes | None:
+        if self._frame is None:
+            return None
+        return b"\x00"
+
+
+def test_on_enter_starts_core_camera_on_android() -> None:
+    camera = Camera(on_capture=lambda _: None, on_cancel=lambda: None)
+    fake = _FakeAndroidCamera(frame=_dummy_frame())
+
+    with (
+        patch("modules.camera.is_android", return_value=True),
+        patch("modules.camera._has_camera_permission", return_value=True),
+        patch("modules.camera.CoreCamera", return_value=fake),
+        patch("modules.camera.Clock.schedule_interval") as schedule_interval,
+    ):
+        camera.on_enter()
+
+    assert fake.started is True
+    schedule_interval.assert_called_once()
+    assert camera._update_event is schedule_interval.return_value
+
+
+def test_on_enter_shows_unavailable_when_android_permission_denied() -> None:
+    camera = Camera(on_capture=lambda _: None, on_cancel=lambda: None)
+
+    def request_with_deny(
+        callback: Callable[[list[str], list[bool]], None],
+    ) -> None:
+        callback([], [False])
+
+    with (
+        patch("modules.camera.is_android", return_value=True),
+        patch("modules.camera._has_camera_permission", return_value=False),
+        patch(
+            "modules.camera._request_camera_permission", side_effect=request_with_deny
+        ),
+        patch(
+            "modules.camera.Clock.schedule_once",
+            side_effect=lambda callback, _delay: callback(0),
+        ),
+    ):
+        camera.on_enter()
+
+    assert camera._status.text == CAMERA_UNAVAILABLE_TEXT
+    assert camera._scan_btn.disabled is True
+
+
+def test_android_read_frame_none_does_not_error() -> None:
+    camera = Camera(on_capture=lambda _: None, on_cancel=lambda: None)
+    camera._android_camera = _FakeAndroidCamera(frame=None)  # type: ignore[assignment]
+    camera._status.text = ""
+
+    with patch("modules.camera.is_android", return_value=True):
+        camera._update()
+
+    assert camera._status.text == ""
+    assert camera._frame is None
+
+
+def test_android_read_frame_updates_frame_and_clears_transient_error() -> None:
+    camera = Camera(on_capture=lambda _: None, on_cancel=lambda: None)
+    camera._android_camera = _FakeAndroidCamera(frame=_dummy_frame())  # type: ignore[assignment]
+    camera._status.text = CAMERA_FRAME_ERROR_TEXT
+
+    with (
+        patch("modules.camera.is_android", return_value=True),
+        patch("modules.camera.draw_contour"),
+        patch("modules.camera.rotate_bgr", side_effect=lambda frame, _deg: frame),
+        patch(
+            "modules.camera.nv21_bytes_to_bgr",
+            return_value=_dummy_frame(),
+        ),
+    ):
+        camera._update()
+
+    assert camera._status.text == ""
+    assert camera._frame is not None
+    assert camera._scan_btn.disabled is False
+
+
+def test_on_leave_stops_android_camera() -> None:
+    camera = Camera(on_capture=lambda _: None, on_cancel=lambda: None)
+    fake = _FakeAndroidCamera(frame=_dummy_frame())
+
+    with (
+        patch("modules.camera.is_android", return_value=True),
+        patch("modules.camera._has_camera_permission", return_value=True),
+        patch("modules.camera.CoreCamera", return_value=fake),
+        patch("modules.camera.Clock.schedule_interval"),
+    ):
+        camera.on_enter()
+
+    with patch("modules.camera.Clock.unschedule") as unschedule:
+        camera.on_leave()
+        unschedule.assert_called_once()
+
+    assert fake.stopped is True
