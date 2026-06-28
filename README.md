@@ -159,6 +159,20 @@ Excluded: `tests/`, `p4a_local_recipes/`.
 
 Runtime requirements include `python3`, `kivy`, `numpy`, `opencv`, `pillow`, `rapidocr`, `onnxruntime`, `pyyaml`, `pyclipper`, `shapely`, and Android bindings (`android`, `pyjnius`, `plyer`). See the full `requirements` line in `buildozer.spec`.
 
+## Commits and branch naming
+
+---
+
+**Commits** follow [Conventional Commits](https://www.conventionalcommits.org/): `type(scope): subject` — e.g. `feat(ocr): add RapidOCR backend`, `fix(android): camera rotation`, `docs: update README`. Common types: `feat`, `fix`, `docs`, `chore`, `test`.
+
+**Branches:** `feat/…`, `fix/…`, or `chore/…` off `dev` for day-to-day work; `release/vX.Y.Z` when preparing a release.
+
+## Semantic versioning
+
+---
+
+Versions use [Semantic Versioning](https://semver.org/): `MAJOR.MINOR.PATCH`, with optional pre-release labels (`-alpha`, `-beta`, `-rc`). Bump **MAJOR** for breaking changes, **MINOR** for new features, **PATCH** for fixes. Pre-releases (e.g. `1.0.0-beta.1`) precede a stable `1.0.0`. The canonical version lives in `pyproject.toml` and `buildozer.spec`; tag releases on `master` as `vX.Y.Z`.
+
 ## Branching strategy
 
 ---

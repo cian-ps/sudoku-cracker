@@ -8,7 +8,7 @@ CAMERA_FRAME_ERROR_TEXT = "Could not read camera frame"
 CAMERA_NO_FRAME_TEXT = "No camera frame to scan"
 
 GRID_NOT_FOUND_TEXT = "Could not find Sudoku grid"
-OCR_MISMATCH_TEXT = "Could not read all digits"
+OCR_MISMATCH_TEXT = "Take a head-on shot; not too close"
 OCR_UNAVAILABLE_TEXT = "OCR model unavailable"
 SCAN_FAILED_TEXT = "Scan failed. Try again."
 SCANNING_TEXT = "Scanning puzzle..."

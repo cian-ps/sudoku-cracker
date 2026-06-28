@@ -34,7 +34,7 @@ source.exclude_dirs = tests,p4a_local_recipes
 #source.exclude_patterns = license,images/*/*.jpg
 
 # (str) Application versioning (method 1)
-version = 1.0.0-beta.1
+version = 1.0.0-beta.2
 
 # (str) Application versioning (method 2)
 # version.regex = __version__ = ['"](.*)['"]
@@ -301,7 +301,7 @@ android.archs = arm64-v8a, armeabi-v7a
 # (int) overrides automatic versionCode computation (used in build.gradle)
 # this is not the same as app version and should only be edited if you know what you're doing
 # Required when version contains non-numeric segments (e.g. beta); bump for each release.
-android.numeric_version = 1000001
+android.numeric_version = 1000002
 
 # (bool) enables Android auto backup feature (Android API >=23)
 android.allow_backup = True
