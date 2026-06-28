@@ -136,7 +136,7 @@ def test_inference_engine_parse_empty_grid(mock_ocr_engine: MagicMock) -> None:
 
 
 @pytest.mark.no_mock_ocr
-def test_get_paddle_ocr_raises_engine_error() -> None:
+def test_get_ocr_engine_raises_engine_error() -> None:
     _OCREngine.clear_cache()
 
     with patch(
@@ -144,4 +144,4 @@ def test_get_paddle_ocr_raises_engine_error() -> None:
         side_effect=OCREngineError("Failed to initialize OCR engine."),
     ):
         with pytest.raises(OCREngineError, match="Failed to initialize OCR engine"):
-            _OCREngine._get_paddle_ocr()
+            _OCREngine._get_ocr_engine()

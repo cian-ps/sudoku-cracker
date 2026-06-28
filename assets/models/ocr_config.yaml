@@ -1,5 +1,4 @@
-# RapidOCR settings aligned with PaddleOCR(lang="en") defaults:
-# PP-OCRv5 server detection + English mobile recognition.
+# RapidOCR settings: PP-OCRv5 server detection + English mobile recognition.
 global:
   use_cls: false
   log_level: error

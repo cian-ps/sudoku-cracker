@@ -32,10 +32,10 @@ class ObjectDetectionError(Exception):
 class _OCREngine:
     _instance: Any | None = None
     _lock = threading.Lock()
-    _executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="paddle_ocr")
+    _executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="ocr")
 
     @classmethod
-    def _get_paddle_ocr(cls) -> Any:
+    def _get_ocr_engine(cls) -> Any:
         if _OCREngine._instance is not None:
             return _OCREngine._instance
 
@@ -58,7 +58,7 @@ class _OCREngine:
             _OCREngine._instance = None
 
     def __init__(self) -> None:
-        self._ocr = self._get_paddle_ocr()
+        self._ocr = self._get_ocr_engine()
 
     def _predict(self, image: np.ndarray) -> list[Any]:
         return self._ocr.predict(image)
