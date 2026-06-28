@@ -1,10 +1,18 @@
 # Sudoku Cracker
 
-> Solve any Sudoku puzzle in seconds.
+> An open-source, offline Sudoku solver for Android written in Python.
 
 ---
 
-A free and open-source offline Sudoku solver for Android written in Python.
+Sudoku Cracker is a Kivy app that combines OCR with a classic recursive backtracking algorithm.
+
+#### How it works
+
+- **Computer vision** (OpenCV): the frame is converted to grayscale, blurred, and thresholded; the largest quadrilateral contour is found and perspective-warped into a square grid. The camera preview overlays the detected outline in real time.
+- **Optical character recognition** (RapidOCR / PP-OCRv5 via ONNX Runtime): the warped grid is split into 81 cells. Populated cells are detected by per-cell pixel standard deviation, then digits are recognised offline on a background thread.
+- **Solving** (recursive backtracking): fills empty cells by trying values 1–9 and backtracking when a placement violates row, column, or 3×3-block constraints.
+
+Recognised or manually entered digits appear on the home screen; you can edit them before solving.
 
 ## Attributions
 
@@ -28,6 +36,12 @@ Install dependencies:
 uv venv --python 3.12.3
 source .venv/bin/activate
 uv sync --extra dev
+```
+
+Bootstrap the OCR models:
+
+```bash
+python scripts/bootstrap_ocr_models.py
 ```
 
 Install and run pre-commit hooks:
@@ -81,7 +95,17 @@ adb devices
 
 You should see your device listed as `device` (not `unauthorized`). If unauthorized, accept the debugging prompt on the phone and run `adb devices` again.
 
-#### 3. Build the debug APK
+#### 3. Bootstrap OCR models (if you haven't already)
+
+OCR ONNX weights are not committed to the repo (see `.gitignore`). Before building the APK, pull them into `assets/models/ocr/`:
+
+```bash
+python scripts/bootstrap_ocr_models.py
+```
+
+This warms up RapidOCR, copies `ch_PP-OCRv5_det_server.onnx` and `en_PP-OCRv5_rec_mobile.onnx` from the installed `rapidocr` package, and refreshes `assets/models/ocr_models.json`. Requires a prior `uv sync` so `rapidocr` is available. Without this step, the APK will lack bundled models and OCR will fail at runtime.
+
+#### 4. Build the debug APK
 
 From the project root:
 
@@ -89,11 +113,11 @@ From the project root:
 buildozer -v android debug
 ```
 
-The first build downloads the Android SDK/NDK and compiles native dependencies (including numpy). Expect **30–60+ minutes** on the first run; later builds are much faster. Cached SDK/NDK files are stored under `~/.buildozer/`.
+The first build downloads the Android SDK/NDK and compiles native dependencies (including OpenCV, ONNX Runtime, and numpy). Expect **30–60+ minutes** on the first run; later builds are much faster. Cached SDK/NDK files are stored under `~/.buildozer/`.
 
 On success, the APK is written to `bin/`.
 
-#### 4. Deploy and run on a connected device
+#### 5. Deploy and run on a connected device
 
 With the device connected:
 
@@ -124,13 +148,16 @@ buildozer android debug deploy run logcat
 
 #### Scope - What's packaged
 
-`buildozer.spec` bundles only application source and assets:
+`buildozer.spec` bundles application source and assets:
 
 - `main.py`
 - `modules/` (Python files)
-- `assets/` (PNG images, including the app icon)
+- `assets/` — UI images plus `assets/models/ocr_config.yaml`, `assets/models/ocr_models.json`, and bootstrapped `assets/models/ocr/*.onnx`
+- `p4a_hook.py` (python-for-android build hook)
 
-The `tests/` directory is excluded. Runtime requirements are `python3`, `kivy`, and `numpy` (see `requirements` in `buildozer.spec`).
+Excluded: `tests/`, `p4a_local_recipes/`.
+
+Runtime requirements include `python3`, `kivy`, `numpy`, `opencv`, `pillow`, `rapidocr`, `onnxruntime`, `pyyaml`, `pyclipper`, `shapely`, and Android bindings (`android`, `pyjnius`, `plyer`). See the full `requirements` line in `buildozer.spec`.
 
 ## Branching strategy
 
