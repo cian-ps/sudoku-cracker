@@ -1,13 +1,17 @@
 [project]
 name = "sudoku-cracker"
-version = "1.0.0-beta.1"
+version = "1.0.0-beta.2"
 description = "Solve any Sudoku puzzle in seconds."
 readme = "README.md"
 requires-python = "==3.12.3"
 dependencies = [
     "kivy>=2.3.1",
     "numpy==2.4.6",
+    "onnxruntime>=1.17.0",
+    "opencv-python>=4.13.0.92",
     "pip>=26.1.2",
+    "plyer>=2.1.0",
+    "rapidocr>=3.9.0",
 ]
 
 [project.optional-dependencies]
@@ -19,14 +23,28 @@ dev = [
     "buildozer>=1.6.0",
     "cython==0.29.34",
     "setuptools>=82.0.1",
-]
-ocr = [
-    "paddleocr==3.3.3",
-    "paddlepaddle==3.2.0",
     "jupyter>=1.1.1",
     "matplotlib>=3.10.9",
-    "opencv-python>=4.13.0.92",
+]
+paddleocr = [
+    "paddleocr==3.3.3",
+    "paddlepaddle==3.2.0",
 ]
 
 [tool.mypy]
 ignore_missing_imports = true
+exclude = [
+    "tests/",
+    "p4a_local_recipes/",
+]
+
+[tool.pytest.ini_options]
+markers = [
+    "no_mock_ocr: disable the autouse OCR engine mock for a test",
+    "integration: requires real OCR models and runs full inference",
+]
+
+[tool.ruff]
+exclude = [
+    "*.ipynb"
+]

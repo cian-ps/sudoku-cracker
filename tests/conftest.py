@@ -1,16 +1,35 @@
 import os
+from collections.abc import Iterator
+from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
 from kivy.config import Config
 
-from main import Home
+from modules.home import Home
+from modules.image_parsing import _OCREngine
 
 os.environ.setdefault("KIVY_NO_ARGS", "1")
+os.environ.setdefault("DISABLE_MODEL_SOURCE_CHECK", "True")
 
 Config.set("graphics", "headless", "1")
 Config.set("kivy", "log_level", "error")
 Config.write()
+
+
+@pytest.fixture(autouse=True)
+def mock_ocr_engine(request: pytest.FixtureRequest) -> Iterator[MagicMock | None]:
+    _OCREngine.clear_cache()
+    if request.node.get_closest_marker("no_mock_ocr") is not None:
+        yield None
+        _OCREngine.clear_cache()
+        return
+
+    mock_ocr = MagicMock()
+    mock_ocr.predict.return_value = [{"rec_texts": []}]
+    with patch("modules.image_parsing.create_ocr_engine", return_value=mock_ocr):
+        yield mock_ocr
+    _OCREngine.clear_cache()
 
 
 @pytest.fixture
@@ -32,7 +51,7 @@ def example():
             [0, 0, 0, 8, 2, 0, 6, 0, 9],
             [2, 0, 0, 0, 0, 1, 0, 0, 4],
         ],
-        dtype=np.int64,
+        dtype=np.uint8,
     )
 
 
@@ -50,5 +69,23 @@ def example_solution():
             [3, 1, 7, 8, 2, 4, 6, 5, 9],
             [2, 9, 6, 7, 5, 1, 3, 8, 4],
         ],
-        dtype=np.int64,
+        dtype=np.uint8,
+    )
+
+
+@pytest.fixture
+def unsolvable_puzzle():
+    return np.array(
+        [
+            [1, 2, 3, 4, 0, 0, 0, 0, 0],
+            [2, 3, 1, 0, 5, 0, 0, 0, 0],
+            [3, 1, 2, 0, 0, 6, 0, 0, 0],
+            [5, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 6, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 4, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        ],
+        dtype=np.uint8,
     )

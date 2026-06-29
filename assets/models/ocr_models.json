@@ -1,0 +1,10 @@
+{
+  "det": {
+    "filename": "ch_PP-OCRv5_det_server.onnx",
+    "sha256": "0f8846b1d4bba223a2a2f9d9b44022fbc22cc019051a602b41a7fda9667e4cad"
+  },
+  "rec": {
+    "filename": "en_PP-OCRv5_rec_mobile.onnx",
+    "sha256": "c3461add59bb4323ecba96a492ab75e06dda42467c9e3d0c18db5d1d21924be8"
+  }
+}

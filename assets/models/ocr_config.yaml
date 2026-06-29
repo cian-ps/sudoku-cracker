@@ -1,0 +1,22 @@
+# RapidOCR settings: PP-OCRv5 server detection + English mobile recognition.
+global:
+  use_cls: false
+  log_level: error
+
+det:
+  lang_type: ch
+  model_type: server
+  ocr_version: PPOCRv5
+  box_thresh: 0.5
+  unclip_ratio: 1.6
+  thresh: 0.3
+
+rec:
+  lang_type: en
+  model_type: mobile
+  ocr_version: PPOCRv5
+
+runtime:
+  use_det: true
+  use_cls: false
+  use_rec: true

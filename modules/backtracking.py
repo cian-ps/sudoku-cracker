@@ -9,6 +9,15 @@ _RECURSION_LIMIT = 100000
 sys.setrecursionlimit(_RECURSION_LIMIT)
 
 
+class BacktrackingError(Exception):
+    """
+    Exception raised when the backtracking algorithm fails.
+    """
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
+
+
 class SudokuBacktracking:
     """
     Algorithm that solves any valid 9x9 sudoku puzzle, using recursive backtracking.
@@ -73,5 +82,7 @@ class SudokuBacktracking:
         Returns:
             numpy.ndarray: The solution to the sudoku puzzle.
         """
-        self.__solve(0, 0)
-        return self.__mat
+        if self.__solve(0, 0):
+            return self.__mat
+        else:
+            raise BacktrackingError("Backtracking algorithm failed to find a solution.")
