@@ -53,8 +53,9 @@ jobs:
             --shm-size=2g \
             -v "${{ github.workspace }}:/home/user/hostcwd" \
             -v "${{ github.workspace }}/.buildozer-cache:/home/user/.buildozer" \
+            --entrypoint bash \
             ghcr.io/kivy/buildozer:latest \
-            -v android debug
+            -c "apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y protobuf-compiler && exec /usr/local/bin/entrypoint.sh -v android debug"
 
       - name: Verify APK output
         run: |
