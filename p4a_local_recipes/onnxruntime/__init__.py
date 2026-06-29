@@ -1,5 +1,6 @@
 from multiprocessing import cpu_count
 from os.path import join
+import shutil
 
 import sh
 from pythonforandroid.recipe import PyProjectRecipe
@@ -15,6 +16,7 @@ class OnnxRuntimeRecipe(PyProjectRecipe):
     depends = ["setuptools", "wheel", "numpy", "protobuf", "pybind11"]
     patches = [
         "patches/onnx_numpy.patch",
+        "patches/abseil_codeload_url.patch",
     ]
     build_in_src = True
 
@@ -57,6 +59,11 @@ class OnnxRuntimeRecipe(PyProjectRecipe):
             "build/cmake/android.toolchain.cmake",
         )
         python_path = self.ctx.hostpython
+        protoc = shutil.which("protoc")
+        if not protoc:
+            raise RuntimeError(
+                "protoc is required to build onnxruntime; install protobuf-compiler"
+            )
         shprint(sh.mkdir, "-p", capi_dir)
         shprint(sh.mkdir, "-p", dist_dir)
 
@@ -71,7 +78,7 @@ class OnnxRuntimeRecipe(PyProjectRecipe):
             "-DPYBIND11_USE_CROSSCOMPILING=TRUE",
             "-Donnxruntime_USE_NNAPI_BUILTIN=ON",
             "-Donnxruntime_USE_XNNPACK=ON",
-            "-DONNX_CUSTOM_PROTOC_EXECUTABLE=/usr/bin/protoc",
+            "-DONNX_CUSTOM_PROTOC_EXECUTABLE=" + protoc,
             f"-DPython_NumPy_INCLUDE_DIR={python_include_numpy}",
             f"-DPython_EXECUTABLE={python_path}",
             (

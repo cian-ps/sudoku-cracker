@@ -19,3 +19,4 @@ assets/models/ocr/*.onnx
 .buildozer/
 bin/
 .buildozer-*.log
+.buildozer-cache/
