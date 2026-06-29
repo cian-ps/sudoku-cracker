@@ -27,7 +27,7 @@ source.include_patterns = assets/models/ocr_config.yaml,assets/models/ocr_models
 #source.exclude_exts = spec
 
 # (list) List of directory to exclude (leave empty to not exclude anything)
-source.exclude_dirs = tests,p4a_local_recipes
+source.exclude_dirs = tests,p4a_local_recipes,scripts
 
 # (list) List of exclusions using pattern matching
 # Do not prefix with './'
@@ -316,7 +316,7 @@ android.allow_backup = True
 # android.manifest_placeholders = [:]
 
 # (bool) Skip byte compile for .py files
-# android.no-byte-compile-python = False
+android.no-byte-compile-python = True
 
 # (str) The format used to package the app for release mode (aab or apk or aar).
 # android.release_artifact = aab
