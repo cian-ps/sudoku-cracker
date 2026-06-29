@@ -15,6 +15,7 @@ class OnnxRuntimeRecipe(PyProjectRecipe):
     depends = ["setuptools", "wheel", "numpy", "protobuf", "pybind11"]
     patches = [
         "patches/onnx_numpy.patch",
+        "patches/abseil_codeload_url.patch",
     ]
     build_in_src = True
 
