@@ -6,6 +6,8 @@
 
 Sudoku Cracker is a Kivy app that combines OCR with a classic recursive backtracking algorithm.
 
+![Demo GIF](data/demo.gif)
+
 #### How it works
 
 - **Computer vision** (OpenCV): the frame is converted to grayscale, blurred, and thresholded; the largest quadrilateral contour is found and perspective-warped into a square grid. The camera preview overlays the detected outline in real time.
