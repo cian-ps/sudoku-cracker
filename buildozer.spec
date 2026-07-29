@@ -12,7 +12,7 @@ title = Sudoku Cracker
 package.name = sudokucracker
 
 # (str) Package domain (needed for android/ios packaging)
-package.domain = org.test
+package.domain = org.cian
 
 # (str) Source code where the main.py live
 source.dir = .
@@ -34,7 +34,7 @@ source.exclude_dirs = tests,p4a_local_recipes,scripts
 #source.exclude_patterns = license,images/*/*.jpg
 
 # (str) Application versioning (method 1)
-version = 1.0.0-beta.2
+version = 1.0.0
 
 # (str) Application versioning (method 2)
 # version.regex = __version__ = ['"](.*)['"]
@@ -301,7 +301,7 @@ android.archs = arm64-v8a, armeabi-v7a
 # (int) overrides automatic versionCode computation (used in build.gradle)
 # this is not the same as app version and should only be edited if you know what you're doing
 # Required when version contains non-numeric segments (e.g. beta); bump for each release.
-android.numeric_version = 1000002
+android.numeric_version = 1000003
 
 # (bool) enables Android auto backup feature (Android API >=23)
 android.allow_backup = True
@@ -319,7 +319,7 @@ android.allow_backup = True
 android.no-byte-compile-python = True
 
 # (str) The format used to package the app for release mode (aab or apk or aar).
-# android.release_artifact = aab
+android.release_artifact = apk
 
 # (str) The format used to package the app for debug mode (apk or aar).
 # android.debug_artifact = apk
