@@ -36,16 +36,25 @@ jobs:
       - name: Bootstrap OCR models
         run: uv run python scripts/bootstrap_ocr_models.py
 
+      # Cache SDK/NDK/packages under .buildozer. Stale p4a install venvs are
+      # stripped before/after build — a corrupted build/venv previously failed
+      # with BuildDependencyInstallError while installing pyyaml and friends.
       - name: Cache Buildozer downloads
         uses: actions/cache@v4
         with:
           path: .buildozer-cache
-          key: buildozer-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
+          key: buildozer-v2-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
           restore-keys: |
+            buildozer-v2-${{ runner.os }}-
             buildozer-${{ runner.os }}-
 
       - name: Prepare Buildozer cache directory
-        run: mkdir -p .buildozer-cache && chmod -R ugo+rwX .buildozer-cache
+        run: |
+          mkdir -p .buildozer-cache
+          # Drop cached p4a package-install venvs; p4a reuses them and a
+          # half-upgraded pip breaks pure-Python requirement installs.
+          rm -rf .buildozer-cache/android/platform/build-*/build/venv
+          chmod -R ugo+rwX .buildozer-cache
 
       - name: Decode release keystore
         run: |
@@ -70,7 +79,7 @@ jobs:
             -e P4A_RELEASE_KEYALIAS_PASSWD \
             --entrypoint bash \
             ghcr.io/kivy/buildozer:latest \
-            -c "apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y protobuf-compiler && exec /usr/local/bin/entrypoint.sh -v android release"
+            -c "apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y protobuf-compiler && rm -rf /home/user/.buildozer/android/platform/build-*/build/venv && exec /usr/local/bin/entrypoint.sh -v android release"
 
       - name: Verify APK output
         run: |
@@ -87,6 +96,10 @@ jobs:
       - name: Remove release keystore
         if: always()
         run: rm -f keys/*.keystore
+
+      - name: Drop install venvs before cache save
+        if: always()
+        run: rm -rf .buildozer-cache/android/platform/build-*/build/venv
 
   release:
     needs: build
