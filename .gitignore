@@ -20,3 +20,7 @@ assets/models/ocr/*.onnx
 bin/
 .buildozer-*.log
 .buildozer-cache/
+
+# Android release signing keys (never commit)
+*.keystore
+*.jks

@@ -6,6 +6,8 @@
 
 Sudoku Cracker is a Kivy app that combines OCR with a classic recursive backtracking algorithm.
 
+![Demo GIF](data/demo.gif)
+
 #### How it works
 
 - **Computer vision** (OpenCV): the frame is converted to grayscale, blurred, and thresholded; the largest quadrilateral contour is found and perspective-warped into a square grid. The camera preview overlays the detected outline in real time.
@@ -171,7 +173,7 @@ Runtime requirements include `python3`, `kivy`, `numpy`, `opencv`, `pillow`, `ra
 
 ---
 
-Versions use [Semantic Versioning](https://semver.org/): `MAJOR.MINOR.PATCH`, with optional pre-release labels (`-alpha`, `-beta`, `-rc`). Bump **MAJOR** for breaking changes, **MINOR** for new features, **PATCH** for fixes. Pre-releases (e.g. `1.0.0-beta.1`) precede a stable `1.0.0`. The canonical version lives in `pyproject.toml` and `buildozer.spec`; tag releases on `master` as `vX.Y.Z`.
+Versions use [Semantic Versioning](https://semver.org/): `MAJOR.MINOR.PATCH`, with optional pre-release labels (`-alpha`, `-beta`, `-rc`). Bump **MAJOR** for breaking changes, **MINOR** for new features, **PATCH** for fixes. Pre-releases (e.g. `1.0.0-beta.1`) precede a stable `1.0.0`. The canonical version lives in `pyproject.toml` and `buildozer.spec`; tag a release commit as `vX.Y.Z`.
 
 ## Branching strategy
 
@@ -182,15 +184,24 @@ This project follows a GitFlow-style workflow:
 - **`master`** — always reflects the latest stable release. Do not develop directly on this branch.
 - **`dev`** — integration branch where all day-to-day development lands.
 - **Feature branches** — branch from `dev`, merge back into `dev` when ready.
-- **Release branches** (e.g. `release/v1.0.0`) — used to prepare a release (version bumps, final fixes). When ready, merge into both `dev` and `master`.
-- **Tags** — every release is tagged on `master` (e.g. `v1.0.0`). Pushing a `v*` tag triggers the [Release APK](.github/workflows/release-apk.yml) workflow, which builds the APK and creates a GitHub Release. If a release build fails, you can re-run the workflow from the Actions tab or trigger it manually via **workflow_dispatch**.
+- **Release branches** (e.g. `release/v1.0.0`) — used to prepare a release (version bumps, final fixes, build and release APKs). When ready, merge into both `dev` and `master`.
+- **Tags** — a `v*` tag on a commit triggers the [Release APK](.github/workflows/release-apk.yml) workflow, which builds a signed release APK and creates a GitHub Release. If a build fails, fix on the release branch and move the tag (`git tag -f vX.Y.Z && git push -f origin vX.Y.Z`), or re-run / use **workflow_dispatch**.
+
+The release workflow expects these repository secrets:
+
+| Secret | Purpose |
+| --- | --- |
+| `ANDROID_KEYSTORE_BASE64` | Base64-encoded release keystore |
+| `P4A_RELEASE_KEYSTORE_PASSWD` | Keystore password |
+| `P4A_RELEASE_KEYALIAS` | Key alias |
+| `P4A_RELEASE_KEYALIAS_PASSWD` | Key password |
 
 **CI** runs on pushes to `dev` and on pull requests targeting `master`. Pushing directly to `master` bypasses those checks, so prefer merging via pull request whenever possible.
 
 Typical release flow:
 
-1. Finish work on a release branch and merge it into `dev` and `master` (via pull requests).
-2. Tag the merge commit on `master`: `git tag v1.0.0 && git push origin v1.0.0`
-3. Wait for the Release APK workflow to complete, then verify the GitHub Release.
-4. Merge `master` back into `dev` if the release introduced any last-minute changes only on `master`.
+1. Prepare the release on `release/vX.Y.Z` (version bumps, final fixes).
+2. Tag that commit and push the tag: `git tag v1.0.0 && git push origin v1.0.0`.
+3. Wait for the Release APK workflow to succeed and verify the GitHub Release. If it fails, fix on the release branch and re-tag as needed.
+4. Merge `release/vX.Y.Z` back into `master` and `dev` so `master` reflects the latest release and `dev` is ready for further work.
 
